@@ -8,8 +8,8 @@ export interface MarketData {
   priceUsd:  number | null
   priceAvax: number | null
   liquidity: number | null
-  marketCap: number | null  // priceUsd × circulating supply
-  fdv:       number | null  // priceUsd × total supply
+  marketCap: number | null  // from DexScreener pair.marketCap
+  fdv:       number | null  // priceUsd × token config supply (our calculation)
 }
 
 function fmtUsd(n: number): string {
@@ -33,14 +33,13 @@ function fmtAvax(n: number): string {
 }
 
 interface Props {
-  initial:     MarketData
-  dexApiUrl:   string
-  color:       string
-  circulating: number  // live chain value from SSR, used to compute market cap
-  supply:      number  // total supply from token config, used to compute FDV
+  initial:   MarketData
+  dexApiUrl: string
+  color:     string
+  supply:    number  // token config total supply, used to compute FDV
 }
 
-export default function MarketTicker({ initial, dexApiUrl, color, circulating, supply }: Props) {
+export default function MarketTicker({ initial, dexApiUrl, color, supply }: Props) {
   const [market, setMarket] = useState<MarketData>(initial)
 
   const refresh = useCallback(async () => {
@@ -54,11 +53,11 @@ export default function MarketTicker({ initial, dexApiUrl, color, circulating, s
         priceUsd:  price,
         priceAvax: pair.priceNative ? parseFloat(pair.priceNative) : null,
         liquidity: pair.liquidity?.usd ?? null,
-        marketCap: price ? price * circulating : null,
-        fdv:       price ? price * supply      : null,
+        marketCap: pair.marketCap   ?? null,
+        fdv:       price ? price * supply : null,
       })
     } catch { /* keep stale data on error */ }
-  }, [dexApiUrl, circulating, supply])
+  }, [dexApiUrl, supply])
 
   useEffect(() => {
     const id = setInterval(refresh, REFRESH_MS)

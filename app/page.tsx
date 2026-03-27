@@ -64,8 +64,8 @@ export default async function Dashboard() {
     priceUsd,
     priceAvax: pair?.priceNative ? parseFloat(pair.priceNative) : null,
     liquidity: pair?.liquidity?.usd ?? null,
-    marketCap: priceUsd ? priceUsd * circulating  : null,
-    fdv:       priceUsd ? priceUsd * cfg.supply   : null,
+    marketCap: pair?.marketCap   ?? null,
+    fdv:       priceUsd ? priceUsd * cfg.supply : null,
   }
 
   const updatedAt = new Date().toLocaleString('en-US', {
@@ -118,7 +118,6 @@ export default async function Dashboard() {
           initial={initialMarket}
           dexApiUrl={cfg.urls.dexApi}
           color={cfg.color}
-          circulating={circulating}
           supply={cfg.supply}
         />
 
