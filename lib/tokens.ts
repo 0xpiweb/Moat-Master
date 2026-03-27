@@ -96,7 +96,7 @@ export const TOKENS: Record<string, TokenConfig> = {
     },
     urls: {
       moat:     'https://moats.app/moat/0xcf65744c955a292d11de2a4184e9fabedbfc7b40',
-      buy:      'https://dexscreener.com/avalanche/0xe11e871D312Cc9BaE9Eb24c7bDc2031f8453bf44',
+      buy:      'https://www.phar.gg/trade?inputCurrency=0x0000000000000000000000000000000000000000&outputCurrency=0x18E3605B13F10016901eAC609b9E188CF7c18973',
       burn:     'https://snowtrace.io/token/0x18E3605B13F10016901eAC609b9E188CF7c18973?a=0x000000000000000000000000000000000000dead',
       lp:       'https://pharaoh.exchange/liquidity/v2/0xe11e871D312Cc9BaE9Eb24c7bDc2031f8453bf44',
       dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0xe11e871D312Cc9BaE9Eb24c7bDc2031f8453bf44',
@@ -120,7 +120,7 @@ export const TOKENS: Record<string, TokenConfig> = {
     },
     urls: {
       moat:     'https://moats.app/moat/0x020c73b55d139d5e259bad89b126f2a446c22ac6',
-      buy:      'https://dexscreener.com/avalanche/0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0',
+      buy:      'https://pharaoh.exchange/swap?to=0x201d04f88Bc9B3bdAcdf0519a95E117f25062D38',
       burn:     'https://snowtrace.io/token/0x201d04f88Bc9B3bdAcdf0519a95E117f25062D38?a=0x000000000000000000000000000000000000dead',
       lp:       'https://pharaoh.exchange/liquidity/v2/0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0',
       dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0',
