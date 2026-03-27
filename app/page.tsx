@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { getConfig } from '@/lib/config'
 import { TOKENS } from '@/lib/tokens'
 import { fetchMoatData, fetchChainData } from '@/lib/chain'
@@ -48,10 +49,11 @@ export default async function Dashboard() {
       lp:          lp          - snapshot.lp,
       circulating: circulating - snapCirculating,
     }
+    // Burned tokens can never decrease — floor both burn deltas at 0
+    if ((deltas.burned as number) < 0) deltas.burned = 0
+    if ((deltas.dead   as number) < 0) deltas.dead   = 0
     // Moat burn delta can never logically exceed total dead delta
-    if (deltas.burned != null && deltas.dead != null && (deltas.burned as number) > (deltas.dead as number)) {
-      deltas.burned = deltas.dead
-    }
+    if ((deltas.burned as number) > (deltas.dead as number)) deltas.burned = deltas.dead
   } else {
     deltas = { staked: null, locked: null, burned: null, dead: null, lp: null, circulating: null }
   }
@@ -213,7 +215,7 @@ export default async function Dashboard() {
                 {icon
                   ? <span className="text-base leading-none mt-0.5 flex-shrink-0">{icon}</span>
                   : <div className="h-5 w-5 min-w-[20px] rounded-full overflow-hidden flex-shrink-0 mt-0.5">
-                      <img src={cfg.logo} className="h-full w-full object-cover" alt={cfg.ticker} />
+                      <Image src={cfg.logo} width={20} height={20} className="h-full w-full object-cover" alt={cfg.ticker} />
                     </div>
                 }
                 <p className="text-xs text-zinc-500">
