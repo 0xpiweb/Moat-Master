@@ -26,10 +26,10 @@ function fmtPrice(n: number): string {
 }
 
 function fmtAvax(n: number): string {
-  if (n < 0.000001) return n.toFixed(10) + ' WAVAX'
-  if (n < 0.0001)   return n.toFixed(8)  + ' WAVAX'
-  if (n < 0.01)     return n.toFixed(6)  + ' WAVAX'
-  return n.toFixed(4) + ' WAVAX'
+  if (n < 0.000001) return n.toFixed(10)
+  if (n < 0.0001)   return n.toFixed(8)
+  if (n < 0.01)     return n.toFixed(6)
+  return n.toFixed(4)
 }
 
 interface Props {
@@ -71,7 +71,7 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
     { label: 'Liquidity',        value: market.liquidity ? fmtUsd(market.liquidity)                     : '—' },
     { label: 'Market Cap',       value: market.marketCap ? fmtUsd(market.marketCap)                     : '—' },
     { label: 'Fully Diluted MC', value: market.fdv       ? fmtUsd(market.fdv)                           : '—' },
-    { label: 'Holders',          value: holders != null  ? holders.toLocaleString('en-US')              : '—' },
+    { label: 'Holders',          value: holders != null  ? holders.toLocaleString('en-US')              : '---' },
   ]
 
   return (

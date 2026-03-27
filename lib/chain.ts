@@ -58,11 +58,12 @@ const DEAD_ADDR = '0x000000000000000000000000000000000000dead'
 export async function fetchHolderCount(tokenAddress: string): Promise<number | null> {
   try {
     const res = await fetch(
-      `https://api.routescan.io/v2/network/mainnet/evm/43114/erc20/${tokenAddress}/holders/count`,
+      `https://api.geckoterminal.com/api/v2/networks/avax/tokens/${tokenAddress}`,
       { next: { revalidate: 300 } }
     )
     const json = await res.json()
-    return typeof json.count === 'number' ? json.count : null
+    const count = json?.data?.attributes?.holder_count
+    return typeof count === 'number' ? count : null
   } catch {
     return null
   }
