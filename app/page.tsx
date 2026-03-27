@@ -152,7 +152,7 @@ export default async function Dashboard() {
           <a
             href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
             className={btnBase}
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: `rgba(${cfg.colorRgb},0.4)`, color: cfg.color }}
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(0,255,65,0.4)', color: '#00FF41' }}
           >
             🛒 Buy ${cfg.ticker}
           </a>
@@ -183,11 +183,11 @@ export default async function Dashboard() {
           <a
             href={cfg.urls.dexChart} target="_blank" rel="noopener noreferrer"
             className={btnBase}
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: `rgba(${cfg.colorRgb},0.4)`, color: cfg.color }}
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(0,255,65,0.4)', color: '#00FF41' }}
           >
             <svg
               width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke={cfg.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              stroke="#00FF41" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
               aria-hidden="true"
             >
               <polyline points="3 17 9 11 13 15 21 7" />
