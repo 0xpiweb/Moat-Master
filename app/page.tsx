@@ -185,7 +185,15 @@ export default async function Dashboard() {
             className={btnBase}
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: `rgba(${cfg.colorRgb},0.4)`, color: cfg.color }}
           >
-            📈 Live Chart
+            <svg
+              width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke={cfg.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="3 17 9 11 13 15 21 7" />
+              <polyline points="15 7 21 7 21 13" />
+            </svg>
+            Live Chart
           </a>
         </div>
 
