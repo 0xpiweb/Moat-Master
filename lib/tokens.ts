@@ -11,6 +11,12 @@ export interface TokenConfig {
     moat: string
     lpPair: string
   }
+  theme?: {
+    primary: string;
+    glow: string;
+    chartColors: string[];
+    neonClass: string;
+  };
   urls: {
     moat: string
     buy: string
