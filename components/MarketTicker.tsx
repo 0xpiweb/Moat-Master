@@ -79,14 +79,13 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
       {metrics.map(({ label, value, accent }) => (
         <div
           key={label}
-          className="bg-zinc-900/50 border rounded-2xl p-4 flex flex-col gap-1 transition-colors"
-          style={accent
-            ? { borderColor: color }
-            : { borderColor: 'rgb(39 39 42)' } /* zinc-800 */
-          }
+          className="rounded-2xl p-px"
+          style={{ background: accent ? color : 'rgb(39 39 42)' }}
         >
-          <span className="text-zinc-500 text-xs font-medium tracking-wider">{label}</span>
-          <span className="text-base font-bold tracking-wider text-white">{value}</span>
+          <div className="bg-zinc-900 rounded-[15px] p-4 flex flex-col gap-1 h-full">
+            <span className="text-zinc-500 text-xs font-medium tracking-wider">{label}</span>
+            <span className="text-base font-bold tracking-wider text-white">{value}</span>
+          </div>
         </div>
       ))}
     </div>
