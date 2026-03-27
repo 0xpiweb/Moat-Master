@@ -141,6 +141,7 @@ export default async function Dashboard() {
           burned={dead}
           lp={lp}
           circulating={circulating}
+          moatBurned={burned}
           supply={cfg.supply}
           color={cfg.color}
           colorRgb={cfg.colorRgb}
