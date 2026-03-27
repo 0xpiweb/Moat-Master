@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { TOKENS } from '@/lib/tokens'
-import { fetchMoatData, fetchChainData } from '@/lib/chain'
+import { fetchMoatData, fetchChainData, fetchTokenBalance } from '@/lib/chain'
 import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
@@ -19,7 +19,7 @@ function pct(value: number): string {
 export const revalidate = 60
 
 export default async function HefeDashboard() {
-  const [moat, chain, supabaseRes, dexRes] = await Promise.all([
+  const [moat, chain, supabaseRes, dexRes, extraLp] = await Promise.all([
     fetchMoatData(cfg.contracts.moat),
     fetchChainData(cfg.contracts.token, cfg.contracts.lpPair),
     supabase
@@ -29,10 +29,14 @@ export default async function HefeDashboard() {
       .order('created_at', { ascending: false })
       .limit(1),
     fetch(cfg.urls.dexApi, { next: { revalidate: 60 } }),
+    Promise.all(
+      (cfg.contracts.lpPairsExtra ?? []).map(addr => fetchTokenBalance(cfg.contracts.token, addr))
+    ).then(bals => bals.reduce((s, n) => s + n, 0)),
   ])
 
   const { staked, locked, burned } = moat
-  const { dead, lp } = chain
+  const { dead, lp: joepegsLp } = chain
+  const lp = joepegsLp + extraLp
 
   const circulating = cfg.supply - staked - locked - dead - lp
 

@@ -10,6 +10,7 @@ export interface TokenConfig {
     token: string
     moat: string
     lpPair: string
+    lpPairsExtra?: string[]   // additional LP addresses (HEFE-specific for now)
   }
   urls: {
     moat: string
@@ -87,6 +88,7 @@ export const TOKENS: Record<string, TokenConfig> = {
       token:  '0x18E3605B13F10016901eAC609b9E188CF7c18973',
       moat:   '0xcf65744c955a292d11de2a4184e9fabedbfc7b40',
       lpPair: '0xe11e871D312Cc9BaE9Eb24c7bDc2031f8453bf44',
+      lpPairsExtra: ['0x9b214d9c2872B5CD33F548AADb9c5396FA7E8546'],
     },
     urls: {
       moat:     'https://moats.app/moat/0xcf65744c955a292d11de2a4184e9fabedbfc7b40',
