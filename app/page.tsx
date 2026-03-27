@@ -207,10 +207,15 @@ export default async function Dashboard() {
               { icon: '🔥', title: 'Burned',        desc: `$${cfg.ticker} burned via The Moat contract.` },
               { icon: '🔥', title: 'Total Burned',  desc: `All $${cfg.ticker} sent to the dead address.` },
               { icon: '⚖️', title: 'LP Pair',       desc: `$${cfg.ticker} liquidity locked in DEX pair.` },
-              { icon: '💎', title: 'Circulating',   desc: `Total supply minus all secured supply.` },
+              { icon: null, title: 'Circulating',   desc: `Total supply minus all secured supply.` },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex items-start gap-2">
-                <span className="text-base leading-none mt-0.5">{icon}</span>
+                {icon
+                  ? <span className="text-base leading-none mt-0.5 flex-shrink-0">{icon}</span>
+                  : <div className="h-5 w-5 min-w-[20px] rounded-full overflow-hidden flex-shrink-0 mt-0.5">
+                      <img src={cfg.logo} className="h-full w-full object-cover" alt={cfg.ticker} />
+                    </div>
+                }
                 <p className="text-xs text-zinc-500">
                   <span className="text-zinc-300 font-medium">{title}</span> — {desc}
                 </p>
