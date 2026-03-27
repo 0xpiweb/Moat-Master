@@ -58,8 +58,8 @@ export const TOKENS: Record<string, TokenConfig> = {
     ticker: 'SUPERCYCLE',
     name: '$SUPERCYCLE Hub',
     supply: 10_000_000_000,
-    color: '#00FF41',
-    colorRgb: '0,255,65',
+    color: '#39FF14',
+    colorRgb: '57,255,20',
     logo: '/logo-super.png',
     contracts: {
       token:  '0xCA2e0f72653337d05B1ABceBEA5718A4A3E57a0b',
