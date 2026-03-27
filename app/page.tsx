@@ -57,13 +57,15 @@ export default async function Dashboard() {
   }
 
   // Market data
-  const dexJson = await dexRes.json().catch(() => null)
-  const pair    = dexJson?.pairs?.[0] ?? null
+  const dexJson  = await dexRes.json().catch(() => null)
+  const pair     = dexJson?.pairs?.[0] ?? null
+  const priceUsd = pair?.priceUsd ? parseFloat(pair.priceUsd) : null
   const initialMarket: MarketData = {
-    priceUsd:  pair?.priceUsd    ? parseFloat(pair.priceUsd)    : null,
+    priceUsd,
     priceAvax: pair?.priceNative ? parseFloat(pair.priceNative) : null,
     liquidity: pair?.liquidity?.usd ?? null,
-    fdv:       pair?.fdv ?? null,
+    marketCap: priceUsd ? priceUsd * circulating  : null,
+    fdv:       priceUsd ? priceUsd * cfg.supply   : null,
   }
 
   const updatedAt = new Date().toLocaleString('en-US', {
@@ -112,7 +114,13 @@ export default async function Dashboard() {
         </div>
 
         {/* Market Metrics — client component, auto-refreshes every 30s */}
-        <MarketTicker initial={initialMarket} dexApiUrl={cfg.urls.dexApi} color={cfg.color} />
+        <MarketTicker
+          initial={initialMarket}
+          dexApiUrl={cfg.urls.dexApi}
+          color={cfg.color}
+          circulating={circulating}
+          supply={cfg.supply}
+        />
 
         {/* Row 1: Moat activity */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">

@@ -8,7 +8,8 @@ export interface MarketData {
   priceUsd:  number | null
   priceAvax: number | null
   liquidity: number | null
-  fdv:       number | null
+  marketCap: number | null  // priceUsd × circulating supply
+  fdv:       number | null  // priceUsd × total supply
 }
 
 function fmtUsd(n: number): string {
@@ -32,59 +33,55 @@ function fmtAvax(n: number): string {
 }
 
 interface Props {
-  initial: MarketData
-  dexApiUrl: string
-  color: string
+  initial:     MarketData
+  dexApiUrl:   string
+  color:       string
+  circulating: number  // live chain value from SSR, used to compute market cap
+  supply:      number  // total supply from token config, used to compute FDV
 }
 
-export default function MarketTicker({ initial, dexApiUrl, color }: Props) {
+export default function MarketTicker({ initial, dexApiUrl, color, circulating, supply }: Props) {
   const [market, setMarket] = useState<MarketData>(initial)
 
   const refresh = useCallback(async () => {
     try {
-      const res  = await fetch(dexApiUrl, { cache: 'no-store' })
-      const json = await res.json()
-      const pair = json?.pairs?.[0] ?? null
+      const res   = await fetch(dexApiUrl, { cache: 'no-store' })
+      const json  = await res.json()
+      const pair  = json?.pairs?.[0] ?? null
       if (!pair) return
+      const price = pair.priceUsd ? parseFloat(pair.priceUsd) : null
       setMarket({
-        priceUsd:  pair.priceUsd    ? parseFloat(pair.priceUsd)    : null,
+        priceUsd:  price,
         priceAvax: pair.priceNative ? parseFloat(pair.priceNative) : null,
         liquidity: pair.liquidity?.usd ?? null,
-        fdv:       pair.fdv ?? null,
+        marketCap: price ? price * circulating : null,
+        fdv:       price ? price * supply      : null,
       })
     } catch { /* keep stale data on error */ }
-  }, [dexApiUrl])
+  }, [dexApiUrl, circulating, supply])
 
   useEffect(() => {
     const id = setInterval(refresh, REFRESH_MS)
     return () => clearInterval(id)
   }, [refresh])
 
-  const metrics: { label: string; value: string; live?: boolean }[] = [
-    { label: 'Price USD',   value: market.priceUsd  ? fmtPrice(market.priceUsd)  : '—', live: true },
-    { label: 'Price WAVAX', value: market.priceAvax ? fmtAvax(market.priceAvax)  : '—' },
-    { label: 'Liquidity',   value: market.liquidity ? fmtUsd(market.liquidity)   : '—' },
-    { label: 'Fully Diluted MC', value: market.fdv   ? fmtUsd(market.fdv)         : '—' },
+  const metrics: { label: string; value: string }[] = [
+    { label: 'Price USD',        value: market.priceUsd  ? fmtPrice(market.priceUsd)  : '—' },
+    { label: 'Price WAVAX',      value: market.priceAvax ? fmtAvax(market.priceAvax)  : '—' },
+    { label: 'Liquidity',        value: market.liquidity ? fmtUsd(market.liquidity)   : '—' },
+    { label: 'Market Cap',       value: market.marketCap ? fmtUsd(market.marketCap)   : '—' },
+    { label: 'Fully Diluted MC', value: market.fdv       ? fmtUsd(market.fdv)         : '—' },
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      {metrics.map(({ label, value, live }) => (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      {metrics.map(({ label, value }) => (
         <div
           key={label}
           className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-1 transition-colors"
-          style={{ ['--hover-color' as string]: color }}
         >
           <span className="text-zinc-500 text-xs font-medium tracking-wider">{label}</span>
-          <div className="flex items-center gap-1.5">
-            {live && (
-              <span className="relative flex h-2 w-2 flex-shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: color }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: color }} />
-              </span>
-            )}
-            <span className="text-base font-bold tracking-wider text-white">{value}</span>
-          </div>
+          <span className="text-base font-bold tracking-wider text-white">{value}</span>
         </div>
       ))}
     </div>
