@@ -6,3 +6,7 @@ export function getConfig(): TokenConfig {
   if (!cfg) throw new Error(`Unknown NEXT_PUBLIC_TOKEN_ID: "${id}"`)
   return cfg
 }
+
+export function getConfigBySlug(slug: string): TokenConfig | null {
+  return Object.values(TOKENS).find(t => t.slug === slug.toLowerCase()) ?? null
+}

@@ -1,5 +1,6 @@
 export interface TokenConfig {
   id: string
+  slug: string        // URL segment: lil | supercycle | hefe | freak
   ticker: string
   name: string
   supply: number
@@ -32,6 +33,7 @@ export interface TokenConfig {
 export const TOKENS: Record<string, TokenConfig> = {
   LIL: {
     id: 'LIL',
+    slug: 'lil',
     ticker: 'LIL',
     name: '$LIL Hub',
     supply: 1_350_000_000,
@@ -55,6 +57,7 @@ export const TOKENS: Record<string, TokenConfig> = {
   },
   SUPER: {
     id: 'SUPER',
+    slug: 'supercycle',
     ticker: 'SUPERCYCLE',
     name: '$SUPERCYCLE Hub',
     supply: 10_000_000_000,
@@ -78,6 +81,7 @@ export const TOKENS: Record<string, TokenConfig> = {
   },
   HEFE: {
     id: 'HEFE',
+    slug: 'hefe',
     ticker: 'HEFE',
     name: '$HEFE Hub',
     supply: 690_420_000,
@@ -102,6 +106,7 @@ export const TOKENS: Record<string, TokenConfig> = {
   },
   FREAK: {
     id: 'FREAK',
+    slug: 'freak',
     ticker: 'FREAK',
     name: '$FREAK Hub',
     supply: 1_000_000_000,

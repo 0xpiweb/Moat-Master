@@ -1,23 +1,13 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
-import { getConfig } from '@/lib/config'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
-const cfg = getConfig()
-
 export const metadata: Metadata = {
-  title: cfg.name,
-  description: `Live terminal for ${cfg.ticker}`,
-  icons: {
-    icon: [
-      { url: cfg.logo, type: 'image/png' },
-      { url: `${cfg.logo}?v=2`, type: 'image/png' },
-    ],
-    apple: cfg.logo,
-  },
+  title: 'The Moat Hub',
+  description: 'Live supply terminal for Moat ecosystem tokens',
 }
 
 export default function RootLayout({

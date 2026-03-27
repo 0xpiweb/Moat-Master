@@ -1,24 +1,43 @@
 import Image from 'next/image'
+import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { TOKENS } from '@/lib/tokens'
+import { getConfigBySlug } from '@/lib/config'
 import { fetchMoatData, fetchChainData, fetchTokenBalance, fetchHolderCount } from '@/lib/chain'
 import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
 import MarketTicker, { type MarketData } from '@/components/MarketTicker'
 
-const cfg = TOKENS['HEFE']
-
-// Crimson Red accent for burn actions
-const CRIMSON     = '#DC143C'
-const CRIMSON_RGB = '220,20,60'
-
-function pct(value: number): string {
-  return (value / cfg.supply * 100).toFixed(2)
-}
-
 export const revalidate = 60
 
-export default async function HefeDashboard() {
+export function generateStaticParams() {
+  return Object.values(TOKENS).map(t => ({ token: t.slug }))
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ token: string }> }
+): Promise<Metadata> {
+  const { token } = await params
+  const cfg = getConfigBySlug(token)
+  if (!cfg) return {}
+  return {
+    title: cfg.name,
+    icons: { icon: [{ url: cfg.logo, type: 'image/png' }], apple: cfg.logo },
+  }
+}
+
+function pct(value: number, supply: number): string {
+  return (value / supply * 100).toFixed(2)
+}
+
+export default async function TokenDashboard(
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params
+  const cfg = getConfigBySlug(token)
+  if (!cfg) notFound()
+
   const [moat, chain, supabaseRes, dexRes, extraLp, holders] = await Promise.all([
     fetchMoatData(cfg.contracts.moat),
     fetchChainData(cfg.contracts.token, cfg.contracts.lpPair),
@@ -30,14 +49,16 @@ export default async function HefeDashboard() {
       .limit(1),
     fetch(cfg.urls.dexApi, { next: { revalidate: 60 } }),
     Promise.all(
-      (cfg.contracts.lpPairsExtra ?? []).map(addr => fetchTokenBalance(cfg.contracts.token, addr))
+      (cfg.contracts.lpPairsExtra ?? []).map(addr =>
+        fetchTokenBalance(cfg.contracts.token, addr)
+      )
     ).then(bals => bals.reduce((s, n) => s + n, 0)),
     fetchHolderCount(cfg.contracts.token),
   ])
 
   const { staked, locked, burned } = moat
-  const { dead, lp: joepegsLp } = chain
-  const lp = joepegsLp + extraLp
+  const { dead, lp: primaryLp } = chain
+  const lp = primaryLp + extraLp
 
   const circulating = cfg.supply - staked - locked - dead - lp
 
@@ -57,16 +78,13 @@ export default async function HefeDashboard() {
       lp:          lp          - snapshot.lp,
       circulating: circulating - snapCirculating,
     }
-    // Burned tokens can never decrease — floor both burn deltas at 0
     if ((deltas.burned as number) < 0) deltas.burned = 0
     if ((deltas.dead   as number) < 0) deltas.dead   = 0
-    // Moat burn delta can never logically exceed total dead delta
     if ((deltas.burned as number) > (deltas.dead as number)) deltas.burned = deltas.dead
   } else {
     deltas = { staked: null, locked: null, burned: null, dead: null, lp: null, circulating: null }
   }
 
-  // Market data
   const dexJson  = await dexRes.json().catch(() => null)
   const pair     = dexJson?.pairs?.[0] ?? null
   const priceUsd = pair?.priceUsd ? parseFloat(pair.priceUsd) : null
@@ -83,10 +101,9 @@ export default async function HefeDashboard() {
   })
 
   const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors [box-sizing:border-box] will-change-transform [transform:translateZ(0)]'
-
   const cardProps = { ticker: cfg.ticker, color: cfg.color, colorRgb: cfg.colorRgb }
-
   const ecosystem = Object.values(TOKENS).filter(t => t.id !== cfg.id)
+  const p = (v: number) => pct(v, cfg.supply)
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -123,7 +140,7 @@ export default async function HefeDashboard() {
           </p>
         </div>
 
-        {/* Market Metrics */}
+        {/* Market Metrics — client component, auto-refreshes every 30s */}
         <MarketTicker
           initial={initialMarket}
           dexApiUrl={cfg.urls.dexApi}
@@ -134,16 +151,16 @@ export default async function HefeDashboard() {
 
         {/* Row 1: Moat activity */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <StatCard icon="🏛️" label="Staked"  value={staked}  pct={pct(staked)}  delta={deltas.staked as number | null}  provenance="🏰" {...cardProps} />
-          <StatCard icon="🔐" label="Locked"  value={locked}  pct={pct(locked)}  delta={deltas.locked as number | null}  provenance="🏰" {...cardProps} />
-          <StatCard icon="🔥" label="Burned"  value={burned}  pct={pct(burned)}  delta={deltas.burned as number | null}  provenance="🏰" floorAtZero {...cardProps} />
+          <StatCard icon="🏛️" label="Staked"  value={staked}  pct={p(staked)}  delta={deltas.staked as number | null}  provenance="🏰" {...cardProps} />
+          <StatCard icon="🔐" label="Locked"  value={locked}  pct={p(locked)}  delta={deltas.locked as number | null}  provenance="🏰" {...cardProps} />
+          <StatCard icon="🔥" label="Burned"  value={burned}  pct={p(burned)}  delta={deltas.burned as number | null}  provenance="🏰" floorAtZero {...cardProps} />
         </div>
 
         {/* Row 2: Supply breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <StatCard icon="🔥" label="Total Burned"  value={dead}        pct={pct(dead)}        delta={deltas.dead as number | null}        provenance="💀" floorAtZero {...cardProps} />
-          <StatCard icon="⚖️" label="LP Pair"       value={lp}          pct={pct(lp)}          delta={deltas.lp as number | null}          {...cardProps} />
-          <StatCard icon="💎" label="Circulating"   value={circulating} pct={pct(circulating)} delta={deltas.circulating as number | null} iconSrc={cfg.logo} {...cardProps} />
+          <StatCard icon="🔥" label="Total Burned"  value={dead}        pct={p(dead)}        delta={deltas.dead as number | null}        provenance="💀" floorAtZero {...cardProps} />
+          <StatCard icon="⚖️" label="LP Pair"       value={lp}          pct={p(lp)}          delta={deltas.lp as number | null}          {...cardProps} />
+          <StatCard icon="💎" label="Circulating"   value={circulating} pct={p(circulating)} delta={deltas.circulating as number | null} iconSrc={cfg.logo} {...cardProps} />
         </div>
 
         <SupplyBar
@@ -181,15 +198,13 @@ export default async function HefeDashboard() {
           </a>
           <a
             href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-            className={btnBase}
-            style={{ backgroundColor: `rgba(${CRIMSON_RGB},0.1)`, borderColor: `rgba(${CRIMSON_RGB},0.5)`, color: CRIMSON }}
+            className={`${btnBase} bg-red-950 border-red-800 text-red-300 hover:bg-red-900`}
           >
             🔥 Burn
           </a>
           <a
             href={cfg.urls.burn} target="_blank" rel="noopener noreferrer"
-            className={btnBase}
-            style={{ backgroundColor: `rgba(${CRIMSON_RGB},0.1)`, borderColor: `rgba(${CRIMSON_RGB},0.5)`, color: CRIMSON }}
+            className={`${btnBase} bg-red-950 border-red-800 text-red-300 hover:bg-red-900`}
           >
             💀 View Total Burn
           </a>
