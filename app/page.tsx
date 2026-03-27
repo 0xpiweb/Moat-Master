@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { getConfig } from '@/lib/config'
 import { TOKENS } from '@/lib/tokens'
-import { fetchMoatData, fetchChainData } from '@/lib/chain'
+import { fetchMoatData, fetchChainData, fetchHolderCount } from '@/lib/chain'
 import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
@@ -16,7 +16,7 @@ function pct(value: number): string {
 export const revalidate = 60
 
 export default async function Dashboard() {
-  const [moat, chain, supabaseRes, dexRes] = await Promise.all([
+  const [moat, chain, supabaseRes, dexRes, holders] = await Promise.all([
     fetchMoatData(cfg.contracts.moat),
     fetchChainData(cfg.contracts.token, cfg.contracts.lpPair),
     supabase
@@ -26,6 +26,7 @@ export default async function Dashboard() {
       .order('created_at', { ascending: false })
       .limit(1),
     fetch(cfg.urls.dexApi, { next: { revalidate: 60 } }),
+    fetchHolderCount(cfg.contracts.token),
   ])
 
   const { staked, locked, burned } = moat
@@ -121,6 +122,7 @@ export default async function Dashboard() {
           dexApiUrl={cfg.urls.dexApi}
           color={cfg.color}
           supply={cfg.supply}
+          holders={holders}
         />
 
         {/* Row 1: Moat activity */}

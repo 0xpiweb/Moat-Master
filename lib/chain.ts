@@ -55,6 +55,19 @@ export async function fetchTokenBalance(tokenAddress: string, walletAddress: str
 
 const DEAD_ADDR = '0x000000000000000000000000000000000000dead'
 
+export async function fetchHolderCount(tokenAddress: string): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://api.routescan.io/v2/network/mainnet/evm/43114/erc20/${tokenAddress}/holders/count`,
+      { next: { revalidate: 300 } }
+    )
+    const json = await res.json()
+    return typeof json.count === 'number' ? json.count : null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchChainData(tokenAddress: string, lpPairAddress: string): Promise<{ dead: number; lp: number }> {
   const [dead, lp] = await Promise.all([
     fetchTokenBalance(tokenAddress, DEAD_ADDR),

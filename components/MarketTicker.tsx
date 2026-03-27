@@ -37,9 +37,10 @@ interface Props {
   dexApiUrl: string
   color:     string
   supply:    number  // token config total supply, used to compute FDV
+  holders:   number | null
 }
 
-export default function MarketTicker({ initial, dexApiUrl, color, supply }: Props) {
+export default function MarketTicker({ initial, dexApiUrl, color, supply, holders }: Props) {
   const [market, setMarket] = useState<MarketData>(initial)
 
   const refresh = useCallback(async () => {
@@ -65,15 +66,16 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply }: Prop
   }, [refresh])
 
   const metrics: { label: string; value: string }[] = [
-    { label: 'Price USD',        value: market.priceUsd  ? fmtPrice(market.priceUsd)  : '—' },
-    { label: 'Price WAVAX',      value: market.priceAvax ? fmtAvax(market.priceAvax)  : '—' },
-    { label: 'Liquidity',        value: market.liquidity ? fmtUsd(market.liquidity)   : '—' },
-    { label: 'Market Cap',       value: market.marketCap ? fmtUsd(market.marketCap)   : '—' },
-    { label: 'Fully Diluted MC', value: market.fdv       ? fmtUsd(market.fdv)         : '—' },
+    { label: 'Price USD',        value: market.priceUsd  ? fmtPrice(market.priceUsd)                    : '—' },
+    { label: 'Price WAVAX',      value: market.priceAvax ? fmtAvax(market.priceAvax)                    : '—' },
+    { label: 'Liquidity',        value: market.liquidity ? fmtUsd(market.liquidity)                     : '—' },
+    { label: 'Market Cap',       value: market.marketCap ? fmtUsd(market.marketCap)                     : '—' },
+    { label: 'Fully Diluted MC', value: market.fdv       ? fmtUsd(market.fdv)                           : '—' },
+    { label: 'Holders',          value: holders != null  ? holders.toLocaleString('en-US')              : '—' },
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
       {metrics.map(({ label, value }) => (
         <div
           key={label}
