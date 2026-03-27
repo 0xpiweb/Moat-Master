@@ -138,7 +138,7 @@ export default async function Dashboard() {
         <SupplyBar
           staked={staked}
           locked={locked}
-          burned={burned}
+          burned={dead}
           lp={lp}
           circulating={circulating}
           supply={cfg.supply}
