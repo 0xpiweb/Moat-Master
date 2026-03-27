@@ -44,10 +44,7 @@ export default function StatCard({
           }
           {label}
         </span>
-        <span
-          className="bg-black text-xs font-semibold px-2 py-0.5 rounded-full border"
-          style={{ color, borderColor: `rgba(${colorRgb},0.3)` }}
-        >
+        <span className="bg-black text-[#00FF41] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#00FF41]/30">
           {pct}%
         </span>
       </div>

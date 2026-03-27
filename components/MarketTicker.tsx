@@ -64,7 +64,7 @@ export default function MarketTicker({ initial, dexApiUrl, color }: Props) {
     { label: 'Price USD',   value: market.priceUsd  ? fmtPrice(market.priceUsd)  : '—', live: true },
     { label: 'Price WAVAX', value: market.priceAvax ? fmtAvax(market.priceAvax)  : '—' },
     { label: 'Liquidity',   value: market.liquidity ? fmtUsd(market.liquidity)   : '—' },
-    { label: 'Market Cap',  value: market.fdv       ? fmtUsd(market.fdv)         : '—' },
+    { label: 'Fully Diluted MC', value: market.fdv   ? fmtUsd(market.fdv)         : '—' },
   ]
 
   return (
