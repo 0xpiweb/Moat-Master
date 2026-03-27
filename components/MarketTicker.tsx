@@ -81,7 +81,7 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
           key={label}
           className="bg-zinc-900/50 border rounded-2xl p-4 flex flex-col gap-1 transition-colors"
           style={accent
-            ? { borderColor: color, boxShadow: `0 0 0 1px ${color}22` }
+            ? { borderColor: color }
             : { borderColor: 'rgb(39 39 42)' } /* zinc-800 */
           }
         >
