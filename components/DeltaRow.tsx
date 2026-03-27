@@ -17,11 +17,11 @@ function save(s: Snap) {
   try { localStorage.setItem(SNAP_KEY, JSON.stringify(s)) } catch {}
 }
 
-function Chip({ delta, color }: { delta: number; color: string }) {
+function Chip({ delta }: { delta: number }) {
   const up = delta >= 0
   const n  = Math.round(Math.abs(delta)).toLocaleString('en-US')
   return (
-    <span style={{ color: up ? color : '#FF005C' }} className="font-medium">
+    <span style={{ color: up ? '#00FF41' : '#FF005C' }} className="font-medium">
       {up ? '▲' : '▼'} {up ? '+' : '-'}{n}
     </span>
   )
@@ -31,12 +31,10 @@ export default function DeltaRow({
   field,
   current,
   serverDelta,
-  color,
 }: {
   field: string
   current: number
   serverDelta: number | null
-  color: string
 }) {
   const [delta, setDelta] = useState<number | null>(serverDelta)
 
@@ -65,7 +63,7 @@ export default function DeltaRow({
 
   return (
     <span className="text-zinc-500 text-xs flex items-center gap-1">
-      24h: <Chip delta={delta} color={color} />
+      24h: <Chip delta={delta} />
     </span>
   )
 }

@@ -59,7 +59,6 @@ export default function StatCard({
           field={field}
           current={value}
           serverDelta={delta ?? null}
-          color={color}
         />
       </div>
 
