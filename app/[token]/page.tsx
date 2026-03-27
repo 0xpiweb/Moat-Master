@@ -101,7 +101,7 @@ export default async function TokenDashboard(
   })
 
   const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors [box-sizing:border-box] will-change-transform [transform:translateZ(0)]'
-  const cardProps = { ticker: cfg.ticker, color: cfg.color, colorRgb: cfg.colorRgb }
+  const cardProps = { tokenId: cfg.id, ticker: cfg.ticker, color: cfg.color, colorRgb: cfg.colorRgb }
   const ecosystem = Object.values(TOKENS).filter(t => t.id !== cfg.id)
   const p = (v: number) => pct(v, cfg.supply)
 

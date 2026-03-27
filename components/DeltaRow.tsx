@@ -6,14 +6,15 @@ type Snap = Record<string, { ts: number; v: number }>
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-const SNAP_KEY = `${process.env.NEXT_PUBLIC_TOKEN_ID ?? 'lil'}-hub-snap`
-
-function load(): Snap {
-  try { return JSON.parse(localStorage.getItem(SNAP_KEY) ?? '{}') }
+function snapKey(tokenId: string) {
+  return `${tokenId.toLowerCase()}-hub-snap`
+}
+function load(tokenId: string): Snap {
+  try { return JSON.parse(localStorage.getItem(snapKey(tokenId)) ?? '{}') }
   catch { return {} }
 }
-function save(s: Snap) {
-  try { localStorage.setItem(SNAP_KEY, JSON.stringify(s)) } catch {}
+function save(tokenId: string, s: Snap) {
+  try { localStorage.setItem(snapKey(tokenId), JSON.stringify(s)) } catch {}
 }
 
 function Chip({ delta }: { delta: number }) {
@@ -27,11 +28,13 @@ function Chip({ delta }: { delta: number }) {
 }
 
 export default function DeltaRow({
+  tokenId,
   field,
   current,
   serverDelta,
   floorAtZero = false,
 }: {
+  tokenId: string
   field: string
   current: number
   serverDelta: number | null
@@ -49,21 +52,21 @@ export default function DeltaRow({
       return
     }
 
-    const snap  = load()
+    const snap  = load(tokenId)
     const entry = snap[field]
     const now   = Date.now()
 
-    if (entry && now - entry.ts < DAY_MS * 2) {
+    if (entry && entry.v !== 0 && now - entry.ts < DAY_MS * 2) {
       setDelta(floor(current - entry.v))
     } else {
       setDelta(0)
     }
 
     if (!entry || now - entry.ts > DAY_MS) {
-      save({ ...snap, [field]: { ts: now, v: current } })
+      save(tokenId, { ...snap, [field]: { ts: now, v: current } })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [field, current, serverDelta, floorAtZero])
+  }, [tokenId, field, current, serverDelta, floorAtZero])
 
   if (delta === null) return null
 

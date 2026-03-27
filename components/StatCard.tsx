@@ -15,6 +15,7 @@ interface StatCardProps {
   provenance?: string
   provenanceSrc?: string
   provenanceSrcAlt?: string
+  tokenId: string
   ticker: string
   color: string
   colorRgb: string
@@ -27,7 +28,7 @@ function fmt(n: number): string {
 export default function StatCard({
   icon, iconSrc, iconNode, label, value, pct, delta, floorAtZero, wide,
   provenance, provenanceSrc, provenanceSrcAlt,
-  ticker, color, colorRgb,
+  tokenId, ticker, color, colorRgb,
 }: StatCardProps) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
 
@@ -58,6 +59,7 @@ export default function StatCard({
 
       <div className="h-4 flex items-center">
         <DeltaRow
+          tokenId={tokenId}
           field={field}
           current={value}
           serverDelta={delta ?? null}
