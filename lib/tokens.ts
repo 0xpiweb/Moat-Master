@@ -23,8 +23,8 @@ export interface TokenConfig {
 }
 
 export const TOKENS: Record<string, TokenConfig> = {
-  lil: {
-    id: 'lil',
+  LIL: {
+    id: 'LIL',
     ticker: 'LIL',
     name: '$LIL Hub',
     supply: 1_350_000_000,
