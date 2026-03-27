@@ -41,7 +41,7 @@ export default function StatCard({
           {iconNode
             ? <span className="h-6 w-6 min-w-[24px] flex-shrink-0 flex items-center justify-center">{iconNode}</span>
             : iconSrc
-              ? <div className="h-6 w-6 min-w-[24px] rounded-full overflow-hidden flex-shrink-0"><Image src={iconSrc} width={24} height={24} className="h-full w-full object-cover" alt="token" /></div>
+              ? <div className="h-6 w-6 min-w-[24px] rounded-full overflow-hidden flex-shrink-0"><Image src={iconSrc} width={128} height={128} className="h-full w-full object-cover" alt="token" /></div>
               : <span>{icon}</span>
           }
           {label}

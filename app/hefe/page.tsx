@@ -220,7 +220,7 @@ export default async function HefeDashboard() {
                 {icon
                   ? <span className="text-base leading-none mt-0.5 flex-shrink-0">{icon}</span>
                   : <div className="h-5 w-5 min-w-[20px] rounded-full overflow-hidden flex-shrink-0 mt-0.5">
-                      <Image src={cfg.logo} width={20} height={20} className="h-full w-full object-cover" alt={cfg.ticker} />
+                      <Image src={cfg.logo} width={128} height={128} className="h-full w-full object-cover" alt={cfg.ticker} />
                     </div>
                 }
                 <p className="text-xs text-zinc-500">
