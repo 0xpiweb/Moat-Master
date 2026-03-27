@@ -57,13 +57,14 @@ const DEAD_ADDR = '0x000000000000000000000000000000000000dead'
 
 export async function fetchHolderCount(tokenAddress: string): Promise<number | null> {
   try {
+    const apiKey = process.env.SNOWTRACE_API_KEY ?? 'YourApiKeyToken'
     const res = await fetch(
-      `https://api.geckoterminal.com/api/v2/networks/avax/tokens/${tokenAddress}`,
+      `https://api.snowtrace.io/api?module=token&action=tokenholdercount&contractaddress=${tokenAddress}&apikey=${apiKey}`,
       { next: { revalidate: 300 } }
     )
     const json = await res.json()
-    const count = json?.data?.attributes?.holder_count
-    return typeof count === 'number' ? count : null
+    if (json?.status === '1' && json?.result) return parseInt(json.result, 10)
+    return null
   } catch {
     return null
   }
