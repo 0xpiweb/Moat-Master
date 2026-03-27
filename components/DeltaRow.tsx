@@ -6,7 +6,6 @@ type Snap = Record<string, { ts: number; v: number }>
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// localStorage key is set per token-id at runtime via env
 const SNAP_KEY = `${process.env.NEXT_PUBLIC_TOKEN_ID ?? 'lil'}-hub-snap`
 
 function load(): Snap {
@@ -31,16 +30,22 @@ export default function DeltaRow({
   field,
   current,
   serverDelta,
+  floorAtZero = false,
 }: {
   field: string
   current: number
   serverDelta: number | null
+  floorAtZero?: boolean
 }) {
-  const [delta, setDelta] = useState<number | null>(serverDelta)
+  const floor = (n: number) => floorAtZero ? Math.max(0, n) : n
+
+  const [delta, setDelta] = useState<number | null>(
+    serverDelta !== null ? floor(serverDelta) : null
+  )
 
   useEffect(() => {
     if (serverDelta !== null) {
-      setDelta(serverDelta)
+      setDelta(floor(serverDelta))
       return
     }
 
@@ -49,7 +54,7 @@ export default function DeltaRow({
     const now   = Date.now()
 
     if (entry && now - entry.ts < DAY_MS * 2) {
-      setDelta(current - entry.v)
+      setDelta(floor(current - entry.v))
     } else {
       setDelta(0)
     }
@@ -57,7 +62,8 @@ export default function DeltaRow({
     if (!entry || now - entry.ts > DAY_MS) {
       save({ ...snap, [field]: { ts: now, v: current } })
     }
-  }, [field, current, serverDelta])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field, current, serverDelta, floorAtZero])
 
   if (delta === null) return null
 

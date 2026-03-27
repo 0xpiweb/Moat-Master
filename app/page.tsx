@@ -127,12 +127,12 @@ export default async function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <StatCard icon="🏛️" label="Staked"  value={staked}  pct={pct(staked)}  delta={deltas.staked as number | null}  provenance="🏰" {...cardProps} />
           <StatCard icon="🔐" label="Locked"  value={locked}  pct={pct(locked)}  delta={deltas.locked as number | null}  provenance="🏰" {...cardProps} />
-          <StatCard icon="🔥" label="Burned"  value={burned}  pct={pct(burned)}  delta={deltas.burned as number | null}  provenance="🏰" {...cardProps} />
+          <StatCard icon="🔥" label="Burned"  value={burned}  pct={pct(burned)}  delta={deltas.burned as number | null}  provenance="🏰" floorAtZero {...cardProps} />
         </div>
 
         {/* Row 2: Supply breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <StatCard icon="🔥" label="Total Burned"  value={dead}        pct={pct(dead)}        delta={deltas.dead as number | null}        provenance="💀" {...cardProps} />
+          <StatCard icon="🔥" label="Total Burned"  value={dead}        pct={pct(dead)}        delta={deltas.dead as number | null}        provenance="💀" floorAtZero {...cardProps} />
           <StatCard icon="⚖️" label="LP Pair"       value={lp}          pct={pct(lp)}          delta={deltas.lp as number | null}          {...cardProps} />
           <StatCard icon="💎" label="Circulating"   value={circulating} pct={pct(circulating)} delta={deltas.circulating as number | null} iconSrc={cfg.logo} {...cardProps} />
         </div>

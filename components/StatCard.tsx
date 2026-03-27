@@ -10,6 +10,7 @@ interface StatCardProps {
   value: number
   pct: string
   delta?: number | null
+  floorAtZero?: boolean
   wide?: boolean
   provenance?: string
   provenanceSrc?: string
@@ -24,7 +25,7 @@ function fmt(n: number): string {
 }
 
 export default function StatCard({
-  icon, iconSrc, iconNode, label, value, pct, delta, wide,
+  icon, iconSrc, iconNode, label, value, pct, delta, floorAtZero, wide,
   provenance, provenanceSrc, provenanceSrcAlt,
   ticker, color, colorRgb,
 }: StatCardProps) {
@@ -60,6 +61,7 @@ export default function StatCard({
           field={field}
           current={value}
           serverDelta={delta ?? null}
+          floorAtZero={floorAtZero}
         />
       </div>
 
