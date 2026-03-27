@@ -72,7 +72,7 @@ export default async function Dashboard() {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   })
 
-  const btnBase = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors [box-sizing:border-box] will-change-transform [transform:translateZ(0)]'
+  const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors [box-sizing:border-box] will-change-transform [transform:translateZ(0)]'
 
   const cardProps = { ticker: cfg.ticker, color: cfg.color, colorRgb: cfg.colorRgb }
 
