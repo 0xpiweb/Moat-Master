@@ -65,21 +65,25 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
     return () => clearInterval(id)
   }, [refresh])
 
-  const metrics: { label: string; value: string }[] = [
-    { label: 'Price USD',        value: market.priceUsd  ? fmtPrice(market.priceUsd)                    : '—' },
-    { label: 'Price WAVAX',      value: market.priceAvax ? fmtAvax(market.priceAvax)                    : '—' },
-    { label: 'Liquidity',        value: market.liquidity ? fmtUsd(market.liquidity)                     : '—' },
-    { label: 'Market Cap',       value: market.marketCap ? fmtUsd(market.marketCap)                     : '—' },
-    { label: 'Fully Diluted MC', value: market.fdv       ? fmtUsd(market.fdv)                           : '—' },
-    { label: 'Holders',          value: holders != null  ? holders.toLocaleString('en-US')              : '---' },
+  const metrics: { label: string; value: string; accent?: boolean }[] = [
+    { label: 'Price USD',        value: market.priceUsd  ? fmtPrice(market.priceUsd)       : '—' },
+    { label: 'Price WAVAX',      value: market.priceAvax ? fmtAvax(market.priceAvax)       : '—' },
+    { label: 'Liquidity',        value: market.liquidity ? fmtUsd(market.liquidity)        : '—' },
+    { label: 'Market Cap',       value: market.marketCap ? fmtUsd(market.marketCap)        : '—' },
+    { label: 'Fully Diluted MC', value: market.fdv       ? fmtUsd(market.fdv)              : '—',  accent: true },
+    { label: 'Holders',          value: holders != null  ? holders.toLocaleString('en-US') : '---', accent: true },
   ]
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      {metrics.map(({ label, value }) => (
+      {metrics.map(({ label, value, accent }) => (
         <div
           key={label}
-          className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-1 transition-colors"
+          className="bg-zinc-900/50 border rounded-2xl p-4 flex flex-col gap-1 transition-colors"
+          style={accent
+            ? { borderColor: color, boxShadow: `0 0 0 1px ${color}22` }
+            : { borderColor: 'rgb(39 39 42)' } /* zinc-800 */
+          }
         >
           <span className="text-zinc-500 text-xs font-medium tracking-wider">{label}</span>
           <span className="text-base font-bold tracking-wider text-white">{value}</span>
