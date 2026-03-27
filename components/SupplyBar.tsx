@@ -50,7 +50,7 @@ export default function SupplyBar({
         <span className="text-zinc-400 text-[11px] font-medium leading-none">Secured in Moat</span>
         <span
           className="border text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap leading-none"
-          style={{ borderColor: '#00FF94', color: '#00FF94' }}
+          style={{ borderColor: `rgba(${colorRgb},0.4)`, color }}
         >
           {moatPct}% of {fmtSupply(supply)}
         </span>
