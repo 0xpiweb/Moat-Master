@@ -170,7 +170,7 @@ export default async function Dashboard() {
           </a>
           <a
             href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-            className={`${btnBase} bg-zinc-900/50 border-zinc-700 text-zinc-300`}
+            className={`${btnBase} bg-red-950 border-red-800 text-red-300 hover:bg-red-900`}
           >
             🔥 Burn
           </a>
