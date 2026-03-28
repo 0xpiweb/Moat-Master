@@ -33,7 +33,7 @@ function DishCard({
 }) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   return (
-    <div className="relative bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 flex flex-col gap-2">
+    <div className="relative bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 flex flex-col gap-2 shadow-2xl">
       <div className="flex items-center justify-between">
         <span className="text-zinc-300 text-sm font-medium flex items-center gap-1.5">
           {iconSrc
@@ -66,7 +66,7 @@ function DishCard({
 function MarketBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div
-      className="bg-[#121212]/[.92] backdrop-blur-md rounded-xl p-4 flex flex-col gap-1"
+      className="bg-[#121212]/[.92] backdrop-blur-md rounded-xl p-4 flex flex-col gap-1 shadow-2xl"
       style={{ border: `1px solid ${accent ? 'rgba(255,255,255,0.15)' : 'rgb(39 39 42)'}` }}
     >
       <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
@@ -94,7 +94,7 @@ function DishSupplyBar({
   ]
 
   return (
-    <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mb-4">
+    <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mb-4 shadow-2xl">
       <div className="flex items-center justify-between mb-3">
         <span className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
           Supply Distribution
@@ -187,7 +187,7 @@ export default async function DishDashboard() {
     <>
       {/* Deep obsidian base */}
       <div className="fixed inset-0 pointer-events-none" style={{ backgroundColor: '#080808', zIndex: 0 }} />
-      {/* Full-bleed background image */}
+      {/* Full-bleed background image — desaturated so oranges don't clash */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -195,18 +195,24 @@ export default async function DishDashboard() {
           backgroundSize:     'cover',
           backgroundPosition: 'center',
           backgroundRepeat:   'no-repeat',
+          filter:             'saturate(0.6)',
           zIndex:             1,
         }}
       />
-      {/* Vignette — fades to black at the bottom 25% */}
+      {/* Black overlay — sinks the fire without greying it */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{ backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 2 }}
+      />
+      {/* Vignette — fades to solid black at the bottom */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
           background: 'linear-gradient(to bottom, transparent 55%, #000000 100%)',
-          zIndex:     2,
+          zIndex:     3,
         }}
       />
-      <main className="relative min-h-screen bg-transparent text-white" style={{ zIndex: 3 }}>
+      <main className="relative min-h-screen bg-transparent text-white" style={{ zIndex: 4 }}>
 
       <div className="max-w-6xl mx-auto px-4 py-10">
 
@@ -280,7 +286,7 @@ export default async function DishDashboard() {
         </div>
 
         {/* System Legend */}
-        <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mt-4">
+        <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mt-4 shadow-2xl">
           <p className="text-zinc-600 text-[10px] font-medium uppercase tracking-widest mb-3">System Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
