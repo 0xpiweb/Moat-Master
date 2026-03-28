@@ -138,9 +138,10 @@ export const TOKENS: Record<string, TokenConfig> = {
     colorRgb: '255,69,0',
     logo: '/dish-logo.png',
     contracts: {
-      token:  '0x40146E96EE5297187022D1ca62A3169B5e45B0a4',
-      moat:   '0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b',
-      lpPair: '0x09d5B9a66A14081700Af3245C0717eE5b1Be199c',
+      token:        '0x40146E96EE5297187022D1ca62A3169B5e45B0a4',
+      moat:         '0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b',
+      lpPair:       '0x09d5B9a66A14081700Af3245C0717eE5b1Be199c',
+      lpPairsExtra: ['0x3edc0126e36758419ba7eeb44b2a3a094e7e9bb7'],
     },
     urls: {
       moat:     'https://moats.app/moat/0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b',

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { TOKENS } from '@/lib/tokens'
-import { fetchMoatData, fetchChainData, fetchHolderCount } from '@/lib/chain'
+import { fetchMoatData, fetchChainData, fetchTokenBalance, fetchHolderCount } from '@/lib/chain'
 import { supabase, type SnapshotRow } from '@/lib/supabase'
 import DeltaRow from '@/components/DeltaRow'
 
@@ -134,7 +134,7 @@ function DishSupplyBar({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function DishDashboard() {
-  const [moat, chain, supabaseRes, dexRes, holders] = await Promise.all([
+  const [moat, chain, supabaseRes, dexRes, extraLp, holders] = await Promise.all([
     fetchMoatData(cfg.contracts.moat),
     fetchChainData(cfg.contracts.token, cfg.contracts.lpPair),
     supabase
@@ -144,11 +144,17 @@ export default async function DishDashboard() {
       .order('created_at', { ascending: false })
       .limit(1),
     fetch(cfg.urls.dexApi, { next: { revalidate: 60 } }),
+    Promise.all(
+      (cfg.contracts.lpPairsExtra ?? []).map(addr =>
+        fetchTokenBalance(cfg.contracts.token, addr)
+      )
+    ).then(bals => bals.reduce((s, n) => s + n, 0)),
     fetchHolderCount(cfg.contracts.token),
   ])
 
   const { staked, locked, burned } = moat
-  const { dead, lp } = chain
+  const { dead, lp: primaryLp } = chain
+  const lp = primaryLp + extraLp
   const circulating = cfg.supply - staked - locked - dead - lp
 
   const snapshot: SnapshotRow | null =
