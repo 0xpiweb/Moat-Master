@@ -38,7 +38,7 @@ function BensiCard({
 }) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   return (
-    <div className="relative bg-white border-4 border-black rounded-xl p-5 flex flex-col gap-2">
+    <div className="relative bg-white border-2 border-black rounded-xl p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-black text-sm font-bold flex items-center gap-1.5">
           {iconSrc
@@ -75,7 +75,7 @@ function MarketBox({ label, value, accent }: { label: string; value: string; acc
   return (
     <div
       className="bg-white rounded-xl p-4 flex flex-col gap-1"
-      style={{ border: `4px solid ${accent ? BLUE : '#000'}` }}
+      style={{ border: `2px solid ${accent ? BLUE : '#000'}` }}
     >
       <span className="text-gray-600 text-xs font-bold tracking-wider uppercase">{label}</span>
       <span className="text-base font-black text-black">{value}</span>
@@ -102,7 +102,7 @@ function BensiSupplyBar({
   ]
 
   return (
-    <div className="bg-white border-4 border-black rounded-xl p-5 mb-4">
+    <div className="bg-white border-2 border-black rounded-xl p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-black text-xs font-black uppercase tracking-widest">
           Supply Distribution
@@ -190,7 +190,7 @@ export default async function BensiDashboard() {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   })
 
-  const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-black border-4 border-black transition-all hover:scale-105 [box-sizing:border-box]'
+  const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-black border-2 border-black transition-all hover:scale-105 [box-sizing:border-box]'
 
   const ecosystem = Object.values(TOKENS).filter(t => t.id !== cfg.id)
 
@@ -226,7 +226,7 @@ export default async function BensiDashboard() {
         <div className="mb-6">
           <h1 className="text-3xl font-black tracking-wider flex items-center gap-3">
             <div
-              className="h-10 w-10 min-w-[40px] rounded-full border-4 border-black overflow-hidden flex-shrink-0"
+              className="h-10 w-10 min-w-[40px] rounded-full border-2 border-black overflow-hidden flex-shrink-0"
             >
               <img src={cfg.logo} className="h-full w-full object-cover" alt={cfg.ticker} />
             </div>
@@ -307,7 +307,7 @@ export default async function BensiDashboard() {
         </div>
 
         {/* System Legend */}
-        <div className="bg-white border-4 border-black rounded-xl p-5 mt-4">
+        <div className="bg-white border-2 border-black rounded-xl p-5 mt-4">
           <p className="text-black text-[10px] font-black uppercase tracking-widest mb-3">System Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
@@ -339,14 +339,14 @@ export default async function BensiDashboard() {
       </div>
 
       {/* Ecosystem footer */}
-      <footer className="border-t-4 border-black bg-white pt-4 pb-6 mt-4">
+      <footer className="border-t-2 border-black bg-white pt-4 pb-6 mt-4">
         <p className="text-center text-black text-[10px] font-black uppercase tracking-widest mb-5">
           The Moat Ecosystem
         </p>
         <div className="max-w-6xl mx-auto px-4 flex flex-wrap justify-center gap-2">
           {ecosystem.map(t => (
             <a key={t.id} href={t.hubUrl} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border-4 border-black text-black text-xs font-black transition-all hover:scale-105"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border-2 border-black text-black text-xs font-black transition-all hover:scale-105"
             >
               <div className="h-4 w-4 rounded-full overflow-hidden border border-black flex-shrink-0">
                 <img src={t.logo} className="h-full w-full object-cover" alt={t.ticker} />
