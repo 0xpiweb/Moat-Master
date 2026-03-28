@@ -64,13 +64,22 @@ function DishCard({
 
 // ─── Market box ──────────────────────────────────────────────────────────────
 function MarketBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div
-      className="bg-[#121212]/[.92] backdrop-blur-md rounded-xl p-4 flex flex-col gap-1 shadow-2xl"
-      style={{ border: `1px solid ${accent ? 'rgba(255,255,255,0.15)' : 'rgb(39 39 42)'}` }}
-    >
+  const inner = (
+    <div className="bg-[#121212] backdrop-blur-md rounded-[11px] p-4 flex flex-col gap-1 h-full">
       <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
       <span className="text-base font-bold tracking-wider text-white">{value}</span>
+    </div>
+  )
+  if (accent) {
+    return (
+      <div className="rounded-xl p-px shadow-2xl" style={{ background: 'rgba(255,255,255,0.55)' }}>
+        {inner}
+      </div>
+    )
+  }
+  return (
+    <div className="rounded-xl p-px shadow-2xl" style={{ background: 'rgb(39 39 42)' }}>
+      {inner}
     </div>
   )
 }
@@ -223,7 +232,7 @@ export default async function DishDashboard() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-wider flex items-center gap-3">
             <div className="h-10 w-10 min-w-[40px] rounded-full border border-zinc-700 overflow-hidden flex-shrink-0">
-              <img src={cfg.logo} className="h-full w-full object-cover" alt={cfg.ticker} />
+              <Image src={cfg.logo} width={128} height={128} className="h-full w-full object-cover" alt={cfg.ticker} />
             </div>
             {cfg.name}
           </h1>
@@ -324,7 +333,7 @@ export default async function DishDashboard() {
 
       {/* Ecosystem footer */}
       <footer className="border-t border-zinc-800 bg-black pt-4 pb-6 mt-4">
-        <p className="text-center text-zinc-700 text-[10px] font-medium uppercase tracking-widest mb-5">
+        <p className="text-center text-zinc-400 text-[10px] font-medium uppercase tracking-widest mb-5">
           The Moat Ecosystem
         </p>
         <div className="max-w-6xl mx-auto px-4 flex flex-wrap justify-center gap-2">
