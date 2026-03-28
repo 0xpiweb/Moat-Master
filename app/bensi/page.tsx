@@ -61,7 +61,7 @@ function BensiCard({
         <span className="text-gray-500 text-base font-normal ml-1">${cfg.ticker}</span>
       </p>
       <div className="h-4 flex items-center">
-        <DeltaRow tokenId={cfg.id} field={field} current={value} serverDelta={delta} floorAtZero={floorAtZero} />
+        <DeltaRow tokenId={cfg.id} field={field} current={value} serverDelta={delta} floorAtZero={floorAtZero} positiveColor="#10B981" />
       </div>
       {provenance && (
         <span className="absolute bottom-3 right-3 text-[14px] select-none">{provenance}</span>
@@ -241,8 +241,8 @@ export default async function BensiDashboard() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF41] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00FF41]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
               </span>
               <span className="text-gray-500 uppercase text-[10px] tracking-widest font-black">Live Network</span>
             </span>

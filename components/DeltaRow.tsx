@@ -17,11 +17,11 @@ function save(tokenId: string, s: Snap) {
   try { localStorage.setItem(snapKey(tokenId), JSON.stringify(s)) } catch {}
 }
 
-function Chip({ delta }: { delta: number }) {
+function Chip({ delta, positiveColor }: { delta: number; positiveColor: string }) {
   const up = delta >= 0
   const n  = Math.round(Math.abs(delta)).toLocaleString('en-US')
   return (
-    <span style={{ color: up ? '#00FF41' : '#FF005C' }} className="font-medium">
+    <span style={{ color: up ? positiveColor : '#FF005C' }} className="font-medium">
       {up ? '▲' : '▼'} {up ? '+' : '-'}{n}
     </span>
   )
@@ -33,12 +33,14 @@ export default function DeltaRow({
   current,
   serverDelta,
   floorAtZero = false,
+  positiveColor = '#00FF41',
 }: {
   tokenId: string
   field: string
   current: number
   serverDelta: number | null
   floorAtZero?: boolean
+  positiveColor?: string
 }) {
   const floor = (n: number) => floorAtZero ? Math.max(0, n) : n
 
@@ -72,7 +74,7 @@ export default function DeltaRow({
 
   return (
     <span className="text-zinc-500 text-xs flex items-center gap-1">
-      24h: <Chip delta={delta} />
+      24h: <Chip delta={delta} positiveColor={positiveColor} />
     </span>
   )
 }
