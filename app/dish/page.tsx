@@ -33,7 +33,7 @@ function DishCard({
 }) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   return (
-    <div className="relative bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-5 flex flex-col gap-2">
+    <div className="relative bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-zinc-300 text-sm font-medium flex items-center gap-1.5">
           {iconSrc
@@ -66,7 +66,7 @@ function DishCard({
 function MarketBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div
-      className="bg-zinc-950/80 backdrop-blur-md rounded-xl p-4 flex flex-col gap-1"
+      className="bg-[#121212]/[.92] backdrop-blur-md rounded-xl p-4 flex flex-col gap-1"
       style={{ border: `1px solid ${accent ? 'rgba(255,255,255,0.15)' : 'rgb(39 39 42)'}` }}
     >
       <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
@@ -94,7 +94,7 @@ function DishSupplyBar({
   ]
 
   return (
-    <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-5 mb-4">
+    <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
           Supply Distribution
@@ -198,7 +198,15 @@ export default async function DishDashboard() {
           zIndex:             1,
         }}
       />
-      <main className="relative min-h-screen bg-transparent text-white" style={{ zIndex: 2 }}>
+      {/* Vignette — fades to black at the bottom 25% */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to bottom, transparent 55%, #000000 100%)',
+          zIndex:     2,
+        }}
+      />
+      <main className="relative min-h-screen bg-transparent text-white" style={{ zIndex: 3 }}>
 
       <div className="max-w-6xl mx-auto px-4 py-10">
 
@@ -272,7 +280,7 @@ export default async function DishDashboard() {
         </div>
 
         {/* System Legend */}
-        <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-5 mt-4">
+        <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mt-4">
           <p className="text-zinc-600 text-[10px] font-medium uppercase tracking-widest mb-3">System Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
@@ -304,14 +312,14 @@ export default async function DishDashboard() {
       </div>
 
       {/* Ecosystem footer */}
-      <footer className="border-t border-zinc-900 pt-4 pb-6 mt-4">
+      <footer className="border-t border-zinc-800 bg-black pt-4 pb-6 mt-4">
         <p className="text-center text-zinc-700 text-[10px] font-medium uppercase tracking-widest mb-5">
           The Moat Ecosystem
         </p>
         <div className="max-w-6xl mx-auto px-4 flex flex-wrap justify-center gap-2">
           {ecosystem.map(t => (
             <a key={t.id} href={t.hubUrl} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-transparent border border-zinc-800 text-zinc-500 text-xs font-medium transition-all hover:scale-105 hover:border-zinc-600 hover:text-zinc-300"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-transparent border border-zinc-600 text-zinc-300 text-xs font-medium transition-all hover:scale-105 hover:border-zinc-400 hover:text-white"
             >
               <div className="h-4 w-4 rounded-full overflow-hidden border border-zinc-700 flex-shrink-0">
                 <img src={t.logo} className="h-full w-full object-cover" alt={t.ticker} />
