@@ -225,8 +225,8 @@ export default async function BensiDashboard() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: RED }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: RED }} />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF41] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00FF41]" />
               </span>
               <span className="text-gray-500 uppercase text-[10px] tracking-widest font-black">Live Network</span>
             </span>
