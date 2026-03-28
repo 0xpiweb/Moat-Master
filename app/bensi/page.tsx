@@ -260,7 +260,7 @@ export default async function BensiDashboard() {
         {/* Action Bar */}
         <div className="flex flex-wrap justify-center gap-2 py-6">
           <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: RED, color: '#fff' }}>
+            className={btnBase} style={{ backgroundColor: YELLOW, color: '#000' }}>
             🛒 Buy ${cfg.ticker}
           </a>
           <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
