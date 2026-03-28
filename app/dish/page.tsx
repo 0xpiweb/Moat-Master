@@ -33,7 +33,7 @@ function DishCard({
 }) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   return (
-    <div className="relative bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 flex flex-col gap-2 shadow-2xl">
+    <div className="relative bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 border-t-white/10 rounded-xl p-5 flex flex-col gap-2 shadow-2xl">
       <div className="flex items-center justify-between">
         <span className="text-zinc-300 text-sm font-medium flex items-center gap-1.5">
           {iconSrc
@@ -94,7 +94,7 @@ function DishSupplyBar({
   ]
 
   return (
-    <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mb-4 shadow-2xl">
+    <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 border-t-white/10 rounded-xl p-5 mb-4 shadow-2xl">
       <div className="flex items-center justify-between mb-3">
         <span className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
           Supply Distribution
@@ -195,7 +195,7 @@ export default async function DishDashboard() {
           backgroundSize:     'cover',
           backgroundPosition: 'center',
           backgroundRepeat:   'no-repeat',
-          filter:             'saturate(0.6)',
+          filter:             'blur(8px) saturate(0.7)',
           zIndex:             1,
         }}
       />
@@ -227,7 +227,7 @@ export default async function DishDashboard() {
           <p className="text-zinc-500 mt-1 text-sm flex items-center gap-2 flex-wrap">
             <span>
               Total Supply:{' '}
-              <span className="text-zinc-300 font-medium">
+              <span className="text-white font-medium">
                 {cfg.supply.toLocaleString('en-US')} ${cfg.ticker}
               </span>
             </span>
@@ -286,7 +286,7 @@ export default async function DishDashboard() {
         </div>
 
         {/* System Legend */}
-        <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 rounded-xl p-5 mt-4 shadow-2xl">
+        <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 border-t-white/10 rounded-xl p-5 mt-4 shadow-2xl">
           <p className="text-zinc-600 text-[10px] font-medium uppercase tracking-widest mb-3">System Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
