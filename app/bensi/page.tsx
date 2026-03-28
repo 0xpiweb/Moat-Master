@@ -195,7 +195,24 @@ export default async function BensiDashboard() {
   const ecosystem = Object.values(TOKENS).filter(t => t.id !== cfg.id)
 
   return (
-    <main className="min-h-screen text-black" style={{ backgroundColor: '#FFFBF0' }}>
+    <main className="relative min-h-screen text-black" style={{ backgroundColor: '#FDF6E3' }}>
+
+      {/* Neo-Cubist background texture — 15% ghost overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:    'url(/the-face.jpg)',
+          backgroundSize:     'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat:   'no-repeat',
+          opacity:            0.15,
+          mixBlendMode:       'overlay',
+          zIndex:             0,
+        }}
+      />
+
+      {/* All content sits above the texture */}
+      <div className="relative" style={{ zIndex: 1 }}>
 
       {/* Comic book colour stripe */}
       <div className="h-2 flex">
@@ -347,6 +364,7 @@ export default async function BensiDashboard() {
         <div className="flex-1" style={{ backgroundColor: YELLOW }} />
         <div className="flex-1" style={{ backgroundColor: RED }} />
       </div>
+      </div>{/* end z-index wrapper */}
     </main>
   )
 }
