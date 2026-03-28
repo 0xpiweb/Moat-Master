@@ -33,7 +33,7 @@ function DishCard({
 }) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   return (
-    <div className="relative bg-[#0A0A0A] border border-zinc-800 rounded-xl p-5 flex flex-col gap-2">
+    <div className="relative bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-zinc-300 text-sm font-medium flex items-center gap-1.5">
           {iconSrc
@@ -66,7 +66,7 @@ function DishCard({
 function MarketBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div
-      className="bg-[#0A0A0A] rounded-xl p-4 flex flex-col gap-1"
+      className="bg-zinc-950/80 backdrop-blur-md rounded-xl p-4 flex flex-col gap-1"
       style={{ border: `1px solid ${accent ? 'rgba(255,255,255,0.15)' : 'rgb(39 39 42)'}` }}
     >
       <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
@@ -94,7 +94,7 @@ function DishSupplyBar({
   ]
 
   return (
-    <div className="bg-[#0A0A0A] border border-zinc-800 rounded-xl p-5 mb-4">
+    <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
           Supply Distribution
@@ -187,7 +187,7 @@ export default async function DishDashboard() {
     <>
       {/* Deep obsidian base */}
       <div className="fixed inset-0 pointer-events-none" style={{ backgroundColor: '#080808', zIndex: 0 }} />
-      {/* Heat texture — barely-visible ghost */}
+      {/* Full-bleed background image */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -195,8 +195,6 @@ export default async function DishDashboard() {
           backgroundSize:     'cover',
           backgroundPosition: 'center',
           backgroundRepeat:   'no-repeat',
-          opacity:            0.09,
-          mixBlendMode:       'lighten',
           zIndex:             1,
         }}
       />
@@ -274,7 +272,7 @@ export default async function DishDashboard() {
         </div>
 
         {/* System Legend */}
-        <div className="bg-[#0A0A0A] border border-zinc-800 rounded-xl p-5 mt-4">
+        <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-5 mt-4">
           <p className="text-zinc-600 text-[10px] font-medium uppercase tracking-widest mb-3">System Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
