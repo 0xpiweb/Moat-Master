@@ -205,8 +205,8 @@ export default async function DishDashboard() {
           backgroundSize:     'cover',
           backgroundPosition: 'center',
           backgroundRepeat:   'no-repeat',
-          opacity:            0.15,
-          mixBlendMode:       'overlay',
+          opacity:            0.20,
+          mixBlendMode:       'lighten',
           zIndex:             1,
         }}
       />
