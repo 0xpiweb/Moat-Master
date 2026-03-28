@@ -6,10 +6,6 @@ import DeltaRow from '@/components/DeltaRow'
 
 const cfg = TOKENS['DISH']
 
-// ─── Fire palette ────────────────────────────────────────────────────────────
-const FIRE  = '#FF4500'   // fire orange-red — primary
-const EMBER = '#FF8C00'   // amber — secondary
-
 export const revalidate = 60
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -37,33 +33,30 @@ function DishCard({
 }) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   return (
-    <div className="relative bg-white border-2 border-black rounded-xl p-5 flex flex-col gap-2">
+    <div className="relative bg-[#0A0A0A] border border-zinc-800 rounded-xl p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-black text-sm font-bold flex items-center gap-1.5">
+        <span className="text-zinc-300 text-sm font-medium flex items-center gap-1.5">
           {iconSrc
-            ? <div className="h-6 w-6 rounded-full overflow-hidden border-2 border-black flex-shrink-0">
+            ? <div className="h-6 w-6 rounded-full overflow-hidden border border-zinc-700 flex-shrink-0">
                 <Image src={iconSrc} width={128} height={128} className="h-full w-full object-cover" alt="token" />
               </div>
             : <span>{icon}</span>
           }
           {label}
         </span>
-        <span
-          className="text-xs font-black px-2 py-0.5 rounded-full border-2 border-black"
-          style={{ backgroundColor: FIRE, color: '#fff' }}
-        >
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400">
           {pct(value)}%
         </span>
       </div>
-      <p className="text-2xl font-black tracking-tight text-black">
+      <p className="text-2xl font-bold tracking-tight text-white">
         {fmt(value)}
-        <span className="text-gray-500 text-base font-normal ml-1">${cfg.ticker}</span>
+        <span className="text-zinc-500 text-base font-normal ml-1">${cfg.ticker}</span>
       </p>
       <div className="h-4 flex items-center">
         <DeltaRow tokenId={cfg.id} field={field} current={value} serverDelta={delta} floorAtZero={floorAtZero} positiveColor="#10B981" />
       </div>
       {provenance && (
-        <span className="absolute bottom-3 right-3 text-[14px] select-none">{provenance}</span>
+        <span className="absolute bottom-3 right-3 text-[14px] select-none opacity-30">{provenance}</span>
       )}
     </div>
   )
@@ -73,11 +66,11 @@ function DishCard({
 function MarketBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div
-      className="bg-zinc-900 rounded-xl p-4 flex flex-col gap-1"
-      style={{ border: `2px solid ${accent ? FIRE : 'rgb(63 63 70)'}` }}
+      className="bg-[#0A0A0A] rounded-xl p-4 flex flex-col gap-1"
+      style={{ border: `1px solid ${accent ? 'rgba(255,255,255,0.15)' : 'rgb(39 39 42)'}` }}
     >
-      <span className="text-zinc-400 text-xs font-bold tracking-wider uppercase">{label}</span>
-      <span className="text-base font-black text-white">{value}</span>
+      <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
+      <span className="text-base font-bold tracking-wider text-white">{value}</span>
     </div>
   )
 }
@@ -95,34 +88,31 @@ function DishSupplyBar({
   const segments = [
     { label: 'Staked',      value: staked,      color: '#3B82F6' },
     { label: 'Locked',      value: locked,      color: '#8B5CF6' },
-    { label: 'Burned',      value: burned,      color: FIRE      },
+    { label: 'Burned',      value: burned,      color: '#EF4444' },
     { label: 'LP',          value: lp,          color: '#10B981' },
-    { label: 'Circulating', value: circulating, color: EMBER     },
+    { label: 'Circulating', value: circulating, color: '#52525B' },
   ]
 
   return (
-    <div className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-5 mb-4">
+    <div className="bg-[#0A0A0A] border border-zinc-800 rounded-xl p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-white text-xs font-black uppercase tracking-widest">
+        <span className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
           Supply Distribution
         </span>
-        <span
-          className="text-xs font-black px-2 py-0.5 rounded-full border-2 border-black"
-          style={{ backgroundColor: FIRE, color: '#fff' }}
-        >
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400">
           {((moatTotal / supply) * 100).toFixed(2)}% Secured in Moat
         </span>
       </div>
-      <div className="flex h-4 w-full overflow-hidden rounded-sm border-2 border-zinc-700 gap-px mb-3 bg-zinc-800">
+      <div className="flex h-3 w-full overflow-hidden rounded-sm border border-zinc-800 gap-px mb-3 bg-[#050505]">
         {segments.map(s => s.value > 0 && (
           <div key={s.label} style={{ width: w(s.value), backgroundColor: s.color, minWidth: '2px' }} />
         ))}
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-1">
         {segments.map(s => (
-          <span key={s.label} className="flex items-center gap-1 text-xs font-bold text-zinc-300">
-            <span className="w-2 h-2 rounded-full border border-zinc-600" style={{ backgroundColor: s.color }} />
-            {s.label} <span className="text-zinc-500 font-normal">{pct(s.value)}%</span>
+          <span key={s.label} className="flex items-center gap-1.5 text-xs text-zinc-500">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
+            {s.label} <span className="text-zinc-600">{pct(s.value)}%</span>
           </span>
         ))}
       </div>
@@ -177,27 +167,27 @@ export default async function DishDashboard() {
   const priceUsd = pair?.priceUsd ? parseFloat(pair.priceUsd) : null
 
   const market = [
-    { label: 'Price USD',        value: priceUsd                ? '$' + priceUsd.toFixed(6)               : '—' },
-    { label: 'Price AVAX',       value: pair?.priceNative       ? parseFloat(pair.priceNative).toFixed(6)  : '—' },
-    { label: 'Liquidity',        value: pair?.liquidity?.usd    ? fmtUsd(pair.liquidity.usd)               : '—' },
-    { label: 'Market Cap',       value: pair?.marketCap         ? fmtUsd(pair.marketCap)                   : '—' },
-    { label: 'Fully Diluted MC', value: priceUsd                ? fmtUsd(priceUsd * cfg.supply)            : '—', accent: true },
-    { label: 'Holders',          value: holders != null         ? holders.toLocaleString('en-US')          : '---',            accent: true },
+    { label: 'Price USD',        value: priceUsd             ? '$' + priceUsd.toFixed(6)               : '—' },
+    { label: 'Price AVAX',       value: pair?.priceNative    ? parseFloat(pair.priceNative).toFixed(6)  : '—' },
+    { label: 'Liquidity',        value: pair?.liquidity?.usd ? fmtUsd(pair.liquidity.usd)               : '—' },
+    { label: 'Market Cap',       value: pair?.marketCap      ? fmtUsd(pair.marketCap)                   : '—' },
+    { label: 'Fully Diluted MC', value: priceUsd             ? fmtUsd(priceUsd * cfg.supply)            : '—', accent: true },
+    { label: 'Holders',          value: holders != null      ? holders.toLocaleString('en-US')          : '---',             accent: true },
   ]
 
   const updatedAt = new Date().toLocaleString('en-US', {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   })
 
-  const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-black border-2 border-black transition-all hover:scale-105 [box-sizing:border-box]'
+  const btnBase = 'inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-700 text-zinc-300 bg-transparent transition-all hover:scale-105 hover:border-zinc-400 hover:text-white [box-sizing:border-box]'
 
   const ecosystem = Object.values(TOKENS).filter(t => t.id !== cfg.id)
 
   return (
     <>
       {/* Deep obsidian base */}
-      <div className="fixed inset-0 pointer-events-none" style={{ backgroundColor: '#121212', zIndex: 0 }} />
-      {/* Fire texture overlay */}
+      <div className="fixed inset-0 pointer-events-none" style={{ backgroundColor: '#080808', zIndex: 0 }} />
+      {/* Heat texture — barely-visible ghost */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -205,34 +195,27 @@ export default async function DishDashboard() {
           backgroundSize:     'cover',
           backgroundPosition: 'center',
           backgroundRepeat:   'no-repeat',
-          opacity:            0.20,
+          opacity:            0.09,
           mixBlendMode:       'lighten',
           zIndex:             1,
         }}
       />
       <main className="relative min-h-screen bg-transparent text-white" style={{ zIndex: 2 }}>
 
-      {/* Fire stripe */}
-      <div className="h-2 flex">
-        <div className="flex-1" style={{ backgroundColor: FIRE }} />
-        <div className="flex-1" style={{ backgroundColor: EMBER }} />
-        <div className="flex-1" style={{ backgroundColor: '#2A2A2A' }} />
-      </div>
-
       <div className="max-w-6xl mx-auto px-4 py-10">
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-black tracking-wider flex items-center gap-3">
-            <div className="h-10 w-10 min-w-[40px] rounded-full border-2 border-zinc-600 overflow-hidden flex-shrink-0">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-wider flex items-center gap-3">
+            <div className="h-10 w-10 min-w-[40px] rounded-full border border-zinc-700 overflow-hidden flex-shrink-0">
               <img src={cfg.logo} className="h-full w-full object-cover" alt={cfg.ticker} />
             </div>
             {cfg.name}
           </h1>
-          <p className="text-zinc-400 mt-1 text-sm flex items-center gap-2 flex-wrap">
+          <p className="text-zinc-500 mt-1 text-sm flex items-center gap-2 flex-wrap">
             <span>
               Total Supply:{' '}
-              <span className="font-black" style={{ color: FIRE }}>
+              <span className="text-zinc-300 font-medium">
                 {cfg.supply.toLocaleString('en-US')} ${cfg.ticker}
               </span>
             </span>
@@ -241,7 +224,7 @@ export default async function DishDashboard() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
               </span>
-              <span className="text-zinc-500 uppercase text-[10px] tracking-widest font-black">Live Network</span>
+              <span className="text-zinc-600 uppercase text-[10px] tracking-widest font-medium">Live Network</span>
             </span>
           </p>
         </div>
@@ -252,14 +235,14 @@ export default async function DishDashboard() {
         </div>
 
         {/* Row 1: Moat activity */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           <DishCard icon="🏛️" label="Staked"  value={staked}  delta={deltas.staked as number | null}  provenance="🏰" />
           <DishCard icon="🔐" label="Locked"  value={locked}  delta={deltas.locked as number | null}  provenance="🏰" />
           <DishCard icon="🔥" label="Burned"  value={burned}  delta={deltas.burned as number | null}  provenance="🏰" floorAtZero />
         </div>
 
         {/* Row 2: Supply breakdown */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           <DishCard icon="🔥" label="Total Burned"  value={dead}        delta={deltas.dead as number | null}        provenance="💀" floorAtZero />
           <DishCard icon="⚖️" label="LP Pair"       value={lp}          delta={deltas.lp as number | null}          />
           <DishCard iconSrc={cfg.logo} label="Circulating" value={circulating} delta={deltas.circulating as number | null} />
@@ -273,29 +256,16 @@ export default async function DishDashboard() {
         {/* Action Bar */}
         <div className="flex flex-wrap justify-center gap-2 py-6">
           <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: FIRE, color: '#fff' }}>
+            className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-500 text-white bg-transparent transition-all hover:scale-105 hover:bg-white hover:text-black hover:border-white [box-sizing:border-box]">
             🛒 Buy ${cfg.ticker}
           </a>
-          <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: '#1E3A5F', borderColor: '#2D5FA6', color: '#93C5FD' }}>
-            🏰 Stake
-          </a>
-          <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: '#2D1B4E', borderColor: '#5B21B6', color: '#C4B5FD' }}>
-            🔐 Lock
-          </a>
-          <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: '#3B0D0D', borderColor: '#7F1D1D', color: '#FCA5A5' }}>
-            🔥 Burn
-          </a>
-          <a href={cfg.urls.burn} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: '#3B0D0D', borderColor: '#7F1D1D', color: '#FCA5A5' }}>
-            💀 View Total Burn
-          </a>
-          <a href={cfg.urls.dexChart} target="_blank" rel="noopener noreferrer"
-            className={btnBase} style={{ backgroundColor: '#1A1A1A', borderColor: 'rgba(255,69,0,0.5)', color: EMBER }}>
+          <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer" className={btnBase}>🏰 Stake</a>
+          <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer" className={btnBase}>🔐 Lock</a>
+          <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer" className={btnBase}>🔥 Burn</a>
+          <a href={cfg.urls.burn} target="_blank" rel="noopener noreferrer" className={btnBase}>💀 View Total Burn</a>
+          <a href={cfg.urls.dexChart} target="_blank" rel="noopener noreferrer" className={btnBase}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke={EMBER} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="3 17 9 11 13 15 21 7" />
               <polyline points="15 7 21 7 21 13" />
             </svg>
@@ -304,8 +274,8 @@ export default async function DishDashboard() {
         </div>
 
         {/* System Legend */}
-        <div className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-5 mt-4">
-          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-3">System Legend</p>
+        <div className="bg-[#0A0A0A] border border-zinc-800 rounded-xl p-5 mt-4">
+          <p className="text-zinc-600 text-[10px] font-medium uppercase tracking-widest mb-3">System Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { icon: '🏛️', title: 'Staked',       desc: `$${cfg.ticker} actively staked in The Moat.` },
@@ -317,35 +287,35 @@ export default async function DishDashboard() {
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex items-start gap-2">
                 {icon
-                  ? <span className="text-base leading-none mt-0.5 flex-shrink-0">{icon}</span>
-                  : <div className="h-5 w-5 min-w-[20px] rounded-full overflow-hidden border-2 border-zinc-600 flex-shrink-0 mt-0.5">
+                  ? <span className="text-base leading-none mt-0.5 flex-shrink-0 opacity-60">{icon}</span>
+                  : <div className="h-5 w-5 min-w-[20px] rounded-full overflow-hidden border border-zinc-700 flex-shrink-0 mt-0.5">
                       <Image src={cfg.logo} width={128} height={128} className="h-full w-full object-cover" alt={cfg.ticker} />
                     </div>
                 }
-                <p className="text-xs text-zinc-500">
-                  <span className="text-zinc-300 font-bold">{title}</span> — {desc}
+                <p className="text-xs text-zinc-600">
+                  <span className="text-zinc-400 font-medium">{title}</span> — {desc}
                 </p>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-center text-zinc-600 text-xs mt-8">
+        <p className="text-center text-zinc-700 text-xs mt-8">
           Last live check: {updatedAt}
         </p>
       </div>
 
       {/* Ecosystem footer */}
-      <footer className="border-t-2 border-zinc-800 bg-zinc-950 pt-4 pb-6 mt-4">
-        <p className="text-center text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-5">
+      <footer className="border-t border-zinc-900 pt-4 pb-6 mt-4">
+        <p className="text-center text-zinc-700 text-[10px] font-medium uppercase tracking-widest mb-5">
           The Moat Ecosystem
         </p>
         <div className="max-w-6xl mx-auto px-4 flex flex-wrap justify-center gap-2">
           {ecosystem.map(t => (
             <a key={t.id} href={t.hubUrl} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border-2 border-zinc-700 text-zinc-300 text-xs font-black transition-all hover:scale-105 hover:border-zinc-500 hover:text-white"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-transparent border border-zinc-800 text-zinc-500 text-xs font-medium transition-all hover:scale-105 hover:border-zinc-600 hover:text-zinc-300"
             >
-              <div className="h-4 w-4 rounded-full overflow-hidden border border-zinc-600 flex-shrink-0">
+              <div className="h-4 w-4 rounded-full overflow-hidden border border-zinc-700 flex-shrink-0">
                 <img src={t.logo} className="h-full w-full object-cover" alt={t.ticker} />
               </div>
               ${t.ticker} Hub
@@ -354,12 +324,6 @@ export default async function DishDashboard() {
         </div>
       </footer>
 
-      {/* Bottom fire stripe */}
-      <div className="h-2 flex">
-        <div className="flex-1" style={{ backgroundColor: '#2A2A2A' }} />
-        <div className="flex-1" style={{ backgroundColor: EMBER }} />
-        <div className="flex-1" style={{ backgroundColor: FIRE }} />
-      </div>
       </main>
     </>
   )
