@@ -1,3 +1,25 @@
+// Visual theme — all optional, defaults to the standard dark theme
+export interface HubTheme {
+  // Background layers
+  bgBase?: string           // solid base color, e.g. '#FDF6E3' | '#080808'
+  bgImage?: string          // texture/photo URL, e.g. '/the-face.jpg'
+  bgImageOpacity?: number   // 0-1 (default: 1)
+  bgImageBlend?: string     // CSS mix-blend-mode, e.g. 'multiply'
+  bgImageFilter?: string    // CSS filter, e.g. 'blur(8px) saturate(0.7)'
+  bgOverlay?: string        // solid overlay on top of image, e.g. 'rgba(0,0,0,0.45)'
+  bgVignette?: boolean      // bottom-to-black gradient
+
+  // Appearance
+  dark?: boolean            // true = light background / dark text
+  cardVariant?: 'light' | 'frosted'  // undefined → default dark cards
+  buttonVariant?: 'pop-art' | 'ghost' // undefined → default filled buttons
+
+  // Accents
+  deltaPositiveColor?: string         // positive delta chip color (default '#00FF41')
+  stripe?: [string, string, string]   // 3-color top/bottom stripe (e.g. BENSI pop-art)
+  accentColor?: string                // market box accent override (default: cfg.color)
+}
+
 export interface TokenConfig {
   id: string
   slug: string        // URL segment: lil | supercycle | hefe | freak
@@ -11,7 +33,7 @@ export interface TokenConfig {
     token: string
     moat: string
     lpPair: string
-    lpPairsExtra?: string[]   // additional LP addresses (HEFE-specific for now)
+    lpPairsExtra?: string[]   // additional LP addresses
   }
   urls: {
     moat: string
@@ -22,12 +44,7 @@ export interface TokenConfig {
     dexChart: string
   }
   hubUrl: string
-  theme?: {
-    primary: string
-    glow: string
-    chartColors: string[]
-    neonClass: string
-  }
+  theme?: HubTheme
 }
 
 export const TOKENS: Record<string, TokenConfig> = {
@@ -127,6 +144,18 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexChart: 'https://dexscreener.com/avalanche/0x7984cd0fa3daa31f8b305a0544b6097ba40fd3b8',
     },
     hubUrl: 'https://bensi-hub.vercel.app',
+    theme: {
+      bgBase:          '#FDF6E3',
+      bgImage:         '/the-face.jpg',
+      bgImageOpacity:  0.15,
+      bgImageBlend:    'multiply',
+      dark:            true,
+      cardVariant:     'light',
+      buttonVariant:   'pop-art',
+      deltaPositiveColor: '#10B981',
+      stripe:          ['#E31E24', '#FFD700', '#0055A4'],
+      accentColor:     '#0055A4',
+    },
   },
   DISH: {
     id: 'DISH',
@@ -152,6 +181,16 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexChart: 'https://dexscreener.com/avalanche/0x09d5b9a66a14081700af3245c0717ee5b1be199c',
     },
     hubUrl: 'https://dish-hub.vercel.app',
+    theme: {
+      bgBase:        '#080808',
+      bgImage:       '/dimish.jpg',
+      bgImageFilter: 'blur(8px) saturate(0.7)',
+      bgOverlay:     'rgba(0,0,0,0.45)',
+      bgVignette:    true,
+      cardVariant:   'frosted',
+      buttonVariant: 'ghost',
+      deltaPositiveColor: '#10B981',
+    },
   },
   FREAK: {
     id: 'FREAK',

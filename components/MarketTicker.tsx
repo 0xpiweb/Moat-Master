@@ -33,14 +33,16 @@ function fmtAvax(n: number): string {
 }
 
 interface Props {
-  initial:   MarketData
-  dexApiUrl: string
-  color:     string
-  supply:    number  // token config total supply, used to compute FDV
-  holders:   number | null
+  initial:      MarketData
+  dexApiUrl:    string
+  color:        string
+  supply:       number
+  holders:      number | null
+  variant?:     'light' | 'frosted'
+  accentColor?: string   // override accent color for FDV/Holders cells
 }
 
-export default function MarketTicker({ initial, dexApiUrl, color, supply, holders }: Props) {
+export default function MarketTicker({ initial, dexApiUrl, color, supply, holders, variant, accentColor }: Props) {
   const [market, setMarket] = useState<MarketData>(initial)
 
   const refresh = useCallback(async () => {
@@ -74,20 +76,56 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
     { label: 'Holders',          value: holders != null  ? holders.toLocaleString('en-US') : '---', accent: true },
   ]
 
+  const ac = accentColor ?? color
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      {metrics.map(({ label, value, accent }) => (
-        <div
-          key={label}
-          className="rounded-2xl p-px"
-          style={{ background: accent ? color : 'rgb(39 39 42)' }}
-        >
-          <div className="bg-zinc-900 rounded-[15px] p-4 flex flex-col gap-1 h-full">
-            <span className="text-zinc-500 text-xs font-medium tracking-wider">{label}</span>
-            <span className="text-base font-bold tracking-wider text-white">{value}</span>
+      {metrics.map(({ label, value, accent }) => {
+        if (variant === 'light') {
+          return (
+            <div
+              key={label}
+              className="bg-white rounded-xl p-4 flex flex-col gap-1"
+              style={{ border: `2px solid ${accent ? ac : '#000'}` }}
+            >
+              <span className="text-gray-600 text-xs font-bold tracking-wider uppercase">{label}</span>
+              <span className="text-base font-black text-black">{value}</span>
+            </div>
+          )
+        }
+
+        if (variant === 'frosted') {
+          const inner = (
+            <div className="bg-[#121212] backdrop-blur-md rounded-[11px] p-4 flex flex-col gap-1 h-full">
+              <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
+              <span className="text-base font-bold tracking-wider text-white">{value}</span>
+            </div>
+          )
+          return (
+            <div
+              key={label}
+              className="rounded-xl p-px shadow-2xl"
+              style={{ background: accent ? 'rgba(255,255,255,0.55)' : 'rgb(39 39 42)' }}
+            >
+              {inner}
+            </div>
+          )
+        }
+
+        // Default dark
+        return (
+          <div
+            key={label}
+            className="rounded-2xl p-px"
+            style={{ background: accent ? ac : 'rgb(39 39 42)' }}
+          >
+            <div className="bg-zinc-900 rounded-[15px] p-4 flex flex-col gap-1 h-full">
+              <span className="text-zinc-500 text-xs font-medium tracking-wider">{label}</span>
+              <span className="text-base font-bold tracking-wider text-white">{value}</span>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
