@@ -188,7 +188,7 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0x09d5b9a66a14081700af3245c0717ee5b1be199c',
       dexChart: 'https://dexscreener.com/avalanche/0x09d5b9a66a14081700af3245c0717ee5b1be199c',
     },
-    hubUrl: 'https://dish-hub.vercel.app',
+    hubUrl: 'https://dimish-hub.vercel.app',
     theme: {
       bgBase:        '#080808',
       bgImage:       '/dimish.jpg',
