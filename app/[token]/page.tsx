@@ -450,6 +450,28 @@ export default async function TokenDashboard(
             </div>
           </div>
 
+          {/* Rewards Ledger — only rendered when token has rewards data */}
+          {cfg.rewards && cfg.rewards.length > 0 && (
+            <div className={`${legendClass} mt-4`}>
+              <p className={legendTitleClass}>Rewards Ledger</p>
+              <div className="divide-y divide-zinc-800">
+                {cfg.rewards.map((row) => (
+                  <div key={row.label} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+                    <span className={`text-sm ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
+                      {row.label}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#F59E0B' }}>
+                      {row.amount}
+                    </span>
+                    <span className={`text-xs text-right ${cv === 'light' ? 'text-gray-500' : 'text-zinc-500'}`}>
+                      {row.period}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <p className={timestampClass}>
             Last live check: {updatedAt}
           </p>

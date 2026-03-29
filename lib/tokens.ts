@@ -46,6 +46,11 @@ export interface TokenConfig {
   }
   hubUrl: string
   theme?: HubTheme
+  rewards?: Array<{
+    label:  string   // e.g. 'Epoch 27 Rewards'
+    amount: string   // e.g. '30.41 $AVAX'
+    period: string   // e.g. '3/30 - 4/2'
+  }>
 }
 
 export const TOKENS: Record<string, TokenConfig> = {
@@ -79,6 +84,11 @@ export const TOKENS: Record<string, TokenConfig> = {
       bgVignette:    true,
       headerWhite:   true,
     },
+    rewards: [
+      { label: 'Epoch 27 Rewards',   amount: '30.41 $AVAX',    period: '3/30 - 4/2' },
+      { label: 'Moat Total Rewards', amount: '61.01 $AVAX',    period: 'Cumulative since 3/16' },
+      { label: 'Lifetime Rewards',   amount: '2,036.22 $AVAX', period: 'Total ecosystem value distributed' },
+    ],
   },
   SUPER: {
     id: 'SUPER',
