@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getConfig } from '@/lib/config'
-import { fetchMoatData, fetchChainData } from '@/lib/chain'
+import { fetchMoatData, fetchChainData, fetchTokenBalance } from '@/lib/chain'
 import { supabase } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
@@ -12,13 +12,17 @@ export async function GET(req: NextRequest) {
   const cfg = getConfig()
 
   try {
-    const [moat, chain] = await Promise.all([
+    const [moat, chain, extraLp] = await Promise.all([
       fetchMoatData(cfg.contracts.moat),
       fetchChainData(cfg.contracts.token, cfg.contracts.lpPair),
+      Promise.all(
+        (cfg.contracts.lpPairsExtra ?? []).map(addr => fetchTokenBalance(cfg.contracts.token, addr))
+      ).then(bals => bals.reduce((s, n) => s + n, 0)),
     ])
 
     const { staked, locked, burned } = moat
-    const { dead, lp } = chain
+    const { dead, lp: primaryLp } = chain
+    const lp = primaryLp + extraLp
 
     const { error } = await supabase.from('moat_snapshots').insert({
       token_id: cfg.id,
