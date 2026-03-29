@@ -368,7 +368,7 @@ export default async function TokenDashboard(
             <p className={supplyLabelClass}>
               <span>
                 Total Supply:{' '}
-                <span className={supplyValueClass} style={{ color: cfg.color }}>
+                <span className={supplyValueClass} style={{ color: theme?.headerWhite ? '#ffffff' : cfg.color }}>
                   {cfg.supply.toLocaleString('en-US')} ${cfg.ticker}
                 </span>
               </span>
