@@ -74,7 +74,7 @@ export const TOKENS: Record<string, TokenConfig> = {
     theme: {
       bgBase:        '#000000',
       bgImage:       '/lil-bg.jpg',
-      bgOverlay:     'rgba(0,0,0,0.60)',
+      bgOverlay:     'rgba(0,0,0,0.40)',
       bgVignette:    true,
     },
   },
