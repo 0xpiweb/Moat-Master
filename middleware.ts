@@ -8,6 +8,7 @@ const DOMAIN_SLUG: Record<string, string> = {
   'freak-hub.vercel.app':      'freak',
   'bensi-hub.vercel.app':      'bensi',
   'dish-hub.vercel.app':       'dish',
+  'dimish-hub.vercel.app':     'dish',
 }
 
 export function middleware(request: NextRequest) {
