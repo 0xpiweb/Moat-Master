@@ -85,7 +85,7 @@ export const TOKENS: Record<string, TokenConfig> = {
       headerWhite:   true,
     },
     rewards: [
-      { label: 'Epoch 27 Rewards',   amount: '30.41 $AVAX',    period: '3/30 - 4/2' },
+      { label: 'Epoch 27 Rewards',   amount: '30.41 $AVAX',    period: '3/30 - 4/12' },
       { label: 'Moat Total Rewards', amount: '61.01 $AVAX',    period: 'Cumulative since 3/16' },
       { label: 'Lifetime Rewards',   amount: '2,036.22 $AVAX', period: 'Total ecosystem value distributed' },
     ],
