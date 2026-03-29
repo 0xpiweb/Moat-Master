@@ -291,10 +291,16 @@ export default async function TokenDashboard(
   const dotColor = isDark ? '#10B981' : '#00FF41'
   const dotLabelClass = isDark
     ? 'text-gray-500 uppercase text-[10px] tracking-widest font-black'
+    : theme?.headerWhite
+    ? 'text-white uppercase text-[10px] tracking-widest font-bold'
     : 'text-zinc-500 uppercase text-[10px] tracking-widest font-bold'
 
   // ── Header text ───────────────────────────────────────────────────────────
-  const supplyLabelClass  = isDark ? 'text-gray-700 mt-1 text-sm flex items-center gap-2 flex-wrap' : 'text-zinc-400 mt-1 text-sm flex items-center gap-2 flex-wrap'
+  const supplyLabelClass  = isDark
+    ? 'text-gray-700 mt-1 text-sm flex items-center gap-2 flex-wrap'
+    : theme?.headerWhite
+    ? 'text-white mt-1 text-sm flex items-center gap-2 flex-wrap'
+    : 'text-zinc-400 mt-1 text-sm flex items-center gap-2 flex-wrap'
   const supplyValueClass  = isDark ? 'font-black' : 'font-medium'
   const logoRingClass     = isDark ? 'h-10 w-10 min-w-[40px] rounded-full border-2 border-black overflow-hidden flex-shrink-0' : 'h-10 w-10 min-w-[40px] rounded-full border-2 overflow-hidden flex-shrink-0'
   const titleClass        = isDark ? 'text-3xl font-black tracking-wider flex items-center gap-3' : 'text-3xl font-bold tracking-wider flex items-center gap-3'
