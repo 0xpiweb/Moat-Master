@@ -169,12 +169,15 @@ export default async function DishDashboard() {
   if (snapshot) {
     const snapTotalBurned = Math.max(snapshot.burned, snapshot.dead)
     const snapCirc = cfg.supply - snapshot.staked - snapshot.locked - snapTotalBurned - snapshot.lp
+    const burnedDelta    = burned - snapshot.burned
+    const deadDelta      = dead   - snapshot.dead
     deltas = {
-      staked:      staked      - snapshot.staked,
-      locked:      locked      - snapshot.locked,
-      burned:      burned      - snapshot.burned,
-      dead:        totalBurned - snapTotalBurned,
-      lp:          lp          - snapshot.lp,
+      staked:      staked - snapshot.staked,
+      locked:      locked - snapshot.locked,
+      burned:      burnedDelta,
+      // If Moat burned is the dominant figure, Total Burned moves with burned — not dead wallet
+      dead:        burned >= dead ? burnedDelta : deadDelta,
+      lp:          lp    - snapshot.lp,
       circulating: circulating - snapCirc,
     }
     if ((deltas.burned as number) < 0) deltas.burned = 0
