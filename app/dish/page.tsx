@@ -155,7 +155,10 @@ export default async function DishDashboard() {
   const { staked, locked, burned } = moat
   const { dead, lp: primaryLp } = chain
   const lp = primaryLp + extraLp
-  const circulating = cfg.supply - staked - locked - dead - lp
+  // DISH uses ERC-20 burn() which destroys tokens without sending to the dead wallet.
+  // Use the larger of the two values so "Total Burned" is always >= "Burned".
+  const totalBurned = Math.max(burned, dead)
+  const circulating = cfg.supply - staked - locked - totalBurned - lp
 
   const snapshot: SnapshotRow | null =
     supabaseRes.data && supabaseRes.data.length > 0 && supabaseRes.data[0].lp > 0
@@ -164,18 +167,18 @@ export default async function DishDashboard() {
 
   let deltas: Record<string, number | null>
   if (snapshot) {
-    const snapCirc = cfg.supply - snapshot.staked - snapshot.locked - snapshot.dead - snapshot.lp
+    const snapTotalBurned = Math.max(snapshot.burned, snapshot.dead)
+    const snapCirc = cfg.supply - snapshot.staked - snapshot.locked - snapTotalBurned - snapshot.lp
     deltas = {
       staked:      staked      - snapshot.staked,
       locked:      locked      - snapshot.locked,
       burned:      burned      - snapshot.burned,
-      dead:        dead        - snapshot.dead,
+      dead:        totalBurned - snapTotalBurned,
       lp:          lp          - snapshot.lp,
       circulating: circulating - snapCirc,
     }
     if ((deltas.burned as number) < 0) deltas.burned = 0
     if ((deltas.dead   as number) < 0) deltas.dead   = 0
-    if ((deltas.burned as number) > (deltas.dead as number)) deltas.burned = deltas.dead
   } else {
     deltas = { staked: null, locked: null, burned: null, dead: null, lp: null, circulating: null }
   }
@@ -273,13 +276,13 @@ export default async function DishDashboard() {
 
         {/* Row 2: Supply breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-          <DishCard icon="🔥" label="Total Burned"  value={dead}        delta={deltas.dead as number | null}        provenance="💀" floorAtZero />
+          <DishCard icon="🔥" label="Total Burned"  value={totalBurned} delta={deltas.dead as number | null}        provenance="💀" floorAtZero />
           <DishCard icon="⚖️" label="LP Pair"       value={lp}          delta={deltas.lp as number | null}          />
           <DishCard iconSrc={cfg.logo} label="Circulating" value={circulating} delta={deltas.circulating as number | null} />
         </div>
 
         <DishSupplyBar
-          staked={staked} locked={locked} burned={dead} lp={lp}
+          staked={staked} locked={locked} burned={totalBurned} lp={lp}
           circulating={circulating} moatBurned={burned} supply={cfg.supply}
         />
 
