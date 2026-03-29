@@ -11,11 +11,6 @@ interface Props {
   variant?:    'light' | 'frosted'  // undefined = default dark
 }
 
-function fmtSupply(n: number): string {
-  const b = n / 1_000_000_000
-  return b % 1 === 0 ? `${b}B` : `${parseFloat(b.toFixed(2))}B`
-}
-
 export default function SupplyBar({
   staked, locked, burned, lp, circulating,
   moatBurned, supply, color, colorRgb,
@@ -76,7 +71,10 @@ export default function SupplyBar({
           <span className="text-white text-xs font-medium uppercase tracking-widest">
             Supply Distribution
           </span>
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-zinc-600 bg-[#121212] text-white">
+          <span
+            className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#121212] text-white border"
+            style={{ borderColor: `rgba(${colorRgb},0.6)` }}
+          >
             {moatPct}% Secured in Moat
           </span>
         </div>
@@ -109,22 +107,17 @@ export default function SupplyBar({
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-4 transition-all duration-300 ease-in-out">
 
-      {/* Secured in Moat header */}
-      <div className="flex flex-wrap items-center gap-2 mb-8">
-        <span className="text-lg font-bold tracking-tight leading-none" style={{ color }}>
-          {Math.round(moatTotal).toLocaleString('en-US')}
-          <span className="text-sm font-normal ml-1" style={{ color }}>$</span>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-zinc-400 text-xs font-medium uppercase tracking-widest">
+          Supply Distribution
         </span>
-        <span className="text-zinc-400 text-[11px] font-medium leading-none">Secured in Moat</span>
         <span
-          className="border text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap leading-none"
-          style={{ borderColor: `rgba(${colorRgb},0.4)`, color }}
+          className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-black text-white border"
+          style={{ borderColor: `rgba(${colorRgb},0.6)` }}
         >
-          {moatPct}% of {fmtSupply(supply)}
+          {moatPct}% Secured in Moat
         </span>
       </div>
-
-      <p className="text-zinc-400 text-sm font-medium mb-3">Supply Distribution</p>
 
       {/* Stacked bar */}
       <div
