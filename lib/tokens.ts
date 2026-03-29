@@ -71,6 +71,12 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexChart: 'https://dexscreener.com/avalanche/0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
     },
     hubUrl: 'https://lil-hub.vercel.app',
+    theme: {
+      bgBase:        '#000000',
+      bgImage:       '/lil-bg.jpg',
+      bgOverlay:     'rgba(0,0,0,0.60)',
+      bgVignette:    true,
+    },
   },
   SUPER: {
     id: 'SUPER',
