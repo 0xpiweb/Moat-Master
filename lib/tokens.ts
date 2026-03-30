@@ -119,10 +119,10 @@ export const TOKENS: Record<string, TokenConfig> = {
     hubUrl: 'https://supercycle-hub.vercel.app',
     theme: {
       bgBase:          '#0a0b0d',
-      bgImage:         '/super-bg.jpg',
-      bgImageSize:     '75%',
+      bgImage:         '/super-remove-bg.png',
+      bgImageSize:     '65%',
       bgImagePosition: 'center 40%',
-      bgOverlay:       'radial-gradient(ellipse at center, rgba(10,11,13,0) 0%, rgba(10,11,13,0.7) 55%, rgba(10,11,13,1) 100%)',
+      bgOverlay:       'rgba(0,0,0,0.40)',
     },
   },
   HEFE: {
