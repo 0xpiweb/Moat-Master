@@ -143,10 +143,7 @@ export const TOKENS: Record<string, TokenConfig> = {
     },
     hubUrl: 'https://hefe-hub.vercel.app',
     theme: {
-      bgBase:      '#000000',
-      bgImage:     '/hefe-bg.png',
-      bgImageSize: '40%',
-      bgOverlay:   'rgba(0,0,0,0.10)',
+      bgBase: '#000000',
     },
   },
   BENSI: {
