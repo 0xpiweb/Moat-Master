@@ -59,7 +59,7 @@ export default function StatCard({
         {pct}%
       </span>
     ) : variant === 'frosted' ? (
-      <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400">
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: `rgba(${colorRgb},0.35)`, color }}>
         {pct}%
       </span>
     ) : (

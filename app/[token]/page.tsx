@@ -198,7 +198,7 @@ export default async function TokenDashboard(
         </a>
       </div>
     ) : bv === 'ghost' ? (
-      <div className="my-6 rounded-2xl border border-white/20 bg-[#121212]/[.92] backdrop-blur-xl shadow-2xl px-4 py-4">
+      <div className="my-6 rounded-2xl border bg-[#121212]/[.92] backdrop-blur-xl shadow-2xl px-4 py-4" style={{ borderColor: `rgba(${cfg.colorRgb},0.4)` }}>
         <div className="flex flex-wrap justify-center gap-2">
           <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-500 text-white bg-transparent transition-all hover:scale-105 hover:bg-white hover:text-black hover:border-white [box-sizing:border-box]">
