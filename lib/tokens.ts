@@ -216,8 +216,8 @@ export const TOKENS: Record<string, TokenConfig> = {
     ticker: 'FREAK',
     name: '$FREAK Hub',
     supply: 1_000_000_000,
-    color: '#FF8C00',
-    colorRgb: '255,140,0',
+    color: '#FF2D78',
+    colorRgb: '255,45,120',
     logo: '/logo-freak.png',
     contracts: {
       token:  '0x201d04f88Bc9B3bdAcdf0519a95E117f25062D38',
@@ -233,5 +233,14 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexChart: 'https://dexscreener.com/avalanche/0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0',
     },
     hubUrl: 'https://freak-hub.vercel.app',
+    theme: {
+      bgBase:        '#000000',
+      bgImage:       '/lucid-freak.jpg',
+      bgOverlay:     'rgba(0,0,0,0.60)',
+      bgVignette:    true,
+      cardVariant:   'frosted',
+      buttonVariant: 'ghost',
+      headerWhite:   true,
+    },
   },
 }
