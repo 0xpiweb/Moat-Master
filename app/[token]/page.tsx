@@ -327,7 +327,7 @@ export default async function TokenDashboard(
               className="fixed inset-0 pointer-events-none"
               style={{
                 backgroundImage:    `url('${theme.bgImage}')`,
-                backgroundSize:     'cover',
+                backgroundSize:     theme.bgImageSize ?? 'cover',
                 backgroundPosition: theme.bgImagePosition ?? 'center',
                 backgroundRepeat:   'no-repeat',
                 opacity:            theme.bgImageOpacity ?? 1,

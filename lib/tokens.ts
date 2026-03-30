@@ -8,6 +8,7 @@ export interface HubTheme {
   bgImageFilter?: string    // CSS filter, e.g. 'blur(8px) saturate(0.7)'
   bgOverlay?: string        // solid overlay on top of image, e.g. 'rgba(0,0,0,0.45)'
   bgImagePosition?: string  // CSS background-position (default: 'center')
+  bgImageSize?: string      // CSS background-size (default: 'cover')
   bgVignette?: boolean      // bottom-to-black gradient
 
   // Appearance
@@ -142,9 +143,10 @@ export const TOKENS: Record<string, TokenConfig> = {
     },
     hubUrl: 'https://hefe-hub.vercel.app',
     theme: {
-      bgBase:    '#000000',
-      bgImage:   '/hefe-bg.jpg',
-      bgOverlay: 'rgba(0,0,0,0.85)',
+      bgBase:         '#000000',
+      bgImage:        '/hefe-bg.jpg',
+      bgImageSize:    'contain',
+      bgOverlay:      'rgba(0,0,0,0.40)',
     },
   },
   BENSI: {
