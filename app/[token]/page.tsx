@@ -198,24 +198,29 @@ export default async function TokenDashboard(
         </a>
       </div>
     ) : bv === 'ghost' ? (
-      <div className="my-6 rounded-2xl border bg-[#121212]/[.92] backdrop-blur-xl shadow-2xl px-4 py-4" style={{ borderColor: `rgba(${cfg.colorRgb},0.4)` }}>
+      <div
+        className="my-6 rounded-2xl bg-[#121212]/[.92] backdrop-blur-xl shadow-2xl px-4 py-4"
+        style={{
+          '--btn-border':      `rgba(${cfg.colorRgb},0.4)`,
+          '--btn-border-h':    `rgba(${cfg.colorRgb},0.8)`,
+          '--btn-glow':        `rgba(${cfg.colorRgb},0.2)`,
+        } as React.CSSProperties}
+      >
         <div className="flex flex-wrap justify-center gap-2">
-          <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-500 text-white bg-transparent transition-all hover:scale-105 hover:bg-white hover:text-black hover:border-white [box-sizing:border-box]">
-            🛒 Buy ${cfg.ticker}
-          </a>
-          {['🏰 Stake', '🔐 Lock', '🔥 Burn'].map(label => (
-            <a key={label} href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-700 text-zinc-300 bg-transparent transition-all hover:scale-105 hover:border-zinc-400 hover:text-white [box-sizing:border-box]">
+          {[
+            { label: `🛒 Buy $${cfg.ticker}`, href: cfg.urls.buy },
+            { label: '🏰 Stake',              href: cfg.urls.moat },
+            { label: '🔐 Lock',               href: cfg.urls.moat },
+            { label: '🔥 Burn',               href: cfg.urls.moat },
+            { label: '💀 View Total Burn',    href: cfg.urls.burn },
+          ].map(({ label, href }) => (
+            <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border [border-color:var(--btn-border)] text-white bg-transparent transition-all hover:scale-105 hover:[border-color:var(--btn-border-h)] hover:[box-shadow:0_0_12px_var(--btn-glow)] [box-sizing:border-box]">
               {label}
             </a>
           ))}
-          <a href={cfg.urls.burn} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-700 text-zinc-300 bg-transparent transition-all hover:scale-105 hover:border-zinc-400 hover:text-white [box-sizing:border-box]">
-            💀 View Total Burn
-          </a>
           <a href={cfg.urls.dexChart} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-700 text-zinc-300 bg-transparent transition-all hover:scale-105 hover:border-zinc-400 hover:text-white [box-sizing:border-box]">
+            className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border [border-color:var(--btn-border)] text-white bg-transparent transition-all hover:scale-105 hover:[border-color:var(--btn-border-h)] hover:[box-shadow:0_0_12px_var(--btn-glow)] [box-sizing:border-box]">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="3 17 9 11 13 15 21 7" />
