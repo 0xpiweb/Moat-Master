@@ -96,7 +96,7 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
 
         if (variant === 'frosted') {
           const inner = (
-            <div className="bg-[#121212] backdrop-blur-md rounded-[11px] p-4 flex flex-col gap-1 h-full">
+            <div className="bg-[#121212] backdrop-blur-xl rounded-[11px] p-4 flex flex-col gap-1 h-full">
               <span className="text-zinc-500 text-xs font-medium tracking-wider uppercase">{label}</span>
               <span className="text-base font-bold tracking-wider text-white">{value}</span>
             </div>

@@ -41,7 +41,7 @@ export default function StatCard({
     variant === 'light'
       ? `relative bg-white border-2 border-black rounded-xl p-5 flex flex-col gap-2${wideClass}`
       : variant === 'frosted'
-      ? `relative bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 border-t-white/10 rounded-xl p-5 flex flex-col gap-2 shadow-2xl${wideClass}`
+      ? `relative bg-[#121212]/[.92] backdrop-blur-xl border border-zinc-800 border-t-white/10 rounded-xl p-5 flex flex-col gap-2 shadow-2xl${wideClass}`
       : `relative bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 flex flex-col gap-2 transition-colors${wideClass}`
 
   // Label

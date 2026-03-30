@@ -7,6 +7,7 @@ export interface HubTheme {
   bgImageBlend?: string     // CSS mix-blend-mode, e.g. 'multiply'
   bgImageFilter?: string    // CSS filter, e.g. 'blur(8px) saturate(0.7)'
   bgOverlay?: string        // solid overlay on top of image, e.g. 'rgba(0,0,0,0.45)'
+  bgImagePosition?: string  // CSS background-position (default: 'center')
   bgVignette?: boolean      // bottom-to-black gradient
 
   // Appearance
@@ -238,12 +239,13 @@ export const TOKENS: Record<string, TokenConfig> = {
     theme: {
       bgBase:        '#000000',
       bgImage:       '/lucid-freak.jpg',
-      bgOverlay:     'rgba(0,0,0,0.50)',
-      bgVignette:    true,
-      cardVariant:   'frosted',
-      buttonVariant: 'ghost',
-      headerWhite:   true,
-      accentColor:   '#FF8C00',
+      bgOverlay:        'rgba(0,0,0,0.75)',
+      bgImagePosition:  'top',
+      bgVignette:       true,
+      cardVariant:      'frosted',
+      buttonVariant:    'ghost',
+      headerWhite:      true,
+      accentColor:      '#FF8C00',
     },
   },
 }

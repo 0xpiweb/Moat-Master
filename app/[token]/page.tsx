@@ -138,7 +138,7 @@ export default async function TokenDashboard(
     cv === 'light'
       ? 'bg-white border-2 border-black rounded-xl p-5 mt-4'
       : cv === 'frosted'
-      ? 'bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 border-t-white/10 rounded-xl p-5 mt-4 shadow-2xl'
+      ? 'bg-[#121212]/[.92] backdrop-blur-xl border border-zinc-800 border-t-white/10 rounded-xl p-5 mt-4 shadow-2xl'
       : 'bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 mt-4'
 
   const legendTitleClass =
@@ -198,7 +198,7 @@ export default async function TokenDashboard(
         </a>
       </div>
     ) : bv === 'ghost' ? (
-      <div className="my-6 rounded-2xl border border-white/20 bg-[#121212]/[.92] backdrop-blur-md shadow-2xl px-4 py-4">
+      <div className="my-6 rounded-2xl border border-white/20 bg-[#121212]/[.92] backdrop-blur-xl shadow-2xl px-4 py-4">
         <div className="flex flex-wrap justify-center gap-2">
           <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border border-zinc-500 text-white bg-transparent transition-all hover:scale-105 hover:bg-white hover:text-black hover:border-white [box-sizing:border-box]">
@@ -323,7 +323,7 @@ export default async function TokenDashboard(
               style={{
                 backgroundImage:    `url('${theme.bgImage}')`,
                 backgroundSize:     'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: theme.bgImagePosition ?? 'center',
                 backgroundRepeat:   'no-repeat',
                 opacity:            theme.bgImageOpacity ?? 1,
                 mixBlendMode:       theme.bgImageBlend as React.CSSProperties['mixBlendMode'],

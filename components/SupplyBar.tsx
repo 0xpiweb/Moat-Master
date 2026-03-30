@@ -66,7 +66,7 @@ export default function SupplyBar({
       { label: 'Circulating', value: circulating, color: '#52525B' },
     ]
     return (
-      <div className="bg-[#121212]/[.92] backdrop-blur-md border border-zinc-800 border-t-white/10 rounded-xl p-5 mb-4 shadow-2xl">
+      <div className="bg-[#121212]/[.92] backdrop-blur-xl border border-zinc-800 border-t-white/10 rounded-xl p-5 mb-4 shadow-2xl">
         <div className="flex items-center justify-between mb-3">
           <span className="text-white text-xs font-medium uppercase tracking-widest">
             Supply Distribution
