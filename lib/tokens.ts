@@ -216,8 +216,8 @@ export const TOKENS: Record<string, TokenConfig> = {
     ticker: 'FREAK',
     name: '$FREAK Hub',
     supply: 1_000_000_000,
-    color: '#FF2D78',
-    colorRgb: '255,45,120',
+    color: '#FF8C00',
+    colorRgb: '255,140,0',
     logo: '/logo-freak.png',
     contracts: {
       token:  '0x201d04f88Bc9B3bdAcdf0519a95E117f25062D38',
@@ -236,7 +236,7 @@ export const TOKENS: Record<string, TokenConfig> = {
     theme: {
       bgBase:        '#000000',
       bgImage:       '/lucid-freak.jpg',
-      bgOverlay:     'rgba(0,0,0,0.60)',
+      bgOverlay:     'rgba(0,0,0,0.40)',
       bgVignette:    true,
       cardVariant:   'frosted',
       buttonVariant: 'ghost',
