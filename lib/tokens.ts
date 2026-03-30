@@ -117,6 +117,12 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexChart: 'https://dexscreener.com/avalanche/0x017c5608a8ab29ab23093726cf7c64e5ef88e191',
     },
     hubUrl: 'https://supercycle-hub.vercel.app',
+    theme: {
+      bgBase:      '#000000',
+      bgImage:     '/super-bg.jpg',
+      bgImageSize: '45%',
+      bgOverlay:   'rgba(0,0,0,0.75)',
+    },
   },
   HEFE: {
     id: 'HEFE',
