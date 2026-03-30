@@ -141,6 +141,10 @@ export const TOKENS: Record<string, TokenConfig> = {
       dexChart: 'https://dexscreener.com/avalanche/0xe11e871D312Cc9BaE9Eb24c7bDc2031f8453bf44',
     },
     hubUrl: 'https://hefe-hub.vercel.app',
+    theme: {
+      bgBase:  '#000000',
+      bgImage: '/hefe-bg.jpg',
+    },
   },
   BENSI: {
     id: 'BENSI',
