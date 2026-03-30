@@ -333,6 +333,8 @@ export default async function TokenDashboard(
                 opacity:            theme.bgImageOpacity ?? 1,
                 mixBlendMode:       theme.bgImageBlend as React.CSSProperties['mixBlendMode'],
                 filter:             theme.bgImageFilter,
+                maskImage:          theme.bgImageMask,
+                WebkitMaskImage:    theme.bgImageMask,
                 zIndex:             1,
               }}
             />
