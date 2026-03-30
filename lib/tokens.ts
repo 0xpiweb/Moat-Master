@@ -19,6 +19,7 @@ export interface HubTheme {
   stripe?: [string, string, string]   // 3-color top/bottom stripe (e.g. BENSI pop-art)
   accentColor?: string                // market box accent override (default: cfg.color)
   headerWhite?: boolean               // force header sub-text to #fff (for dark bg images)
+  supplyValueWhite?: boolean          // force supply value number to #fff (LIL neon bg)
 }
 
 export interface TokenConfig {
@@ -82,7 +83,8 @@ export const TOKENS: Record<string, TokenConfig> = {
       bgImage:       '/lil-bg.jpg',
       bgOverlay:     'rgba(0,0,0,0.40)',
       bgVignette:    true,
-      headerWhite:   true,
+      headerWhite:        true,
+      supplyValueWhite:   true,
     },
     rewards: [
       { label: 'Epoch 27 Rewards',   amount: '30.41 $AVAX',    period: '3/30 - 4/12' },
@@ -236,11 +238,12 @@ export const TOKENS: Record<string, TokenConfig> = {
     theme: {
       bgBase:        '#000000',
       bgImage:       '/lucid-freak.jpg',
-      bgOverlay:     'rgba(0,0,0,0.40)',
+      bgOverlay:     'rgba(0,0,0,0.50)',
       bgVignette:    true,
       cardVariant:   'frosted',
       buttonVariant: 'ghost',
       headerWhite:   true,
+      accentColor:   '#FF8C00',
     },
   },
 }

@@ -105,7 +105,7 @@ export default function MarketTicker({ initial, dexApiUrl, color, supply, holder
             <div
               key={label}
               className="rounded-xl p-px shadow-2xl"
-              style={{ background: accent ? 'rgba(255,255,255,0.55)' : 'rgb(39 39 42)' }}
+              style={{ background: accent ? (accentColor ?? 'rgba(255,255,255,0.55)') : 'rgb(39 39 42)' }}
             >
               {inner}
             </div>
