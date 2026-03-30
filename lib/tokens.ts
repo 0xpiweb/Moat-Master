@@ -10,6 +10,7 @@ export interface HubTheme {
   bgImagePosition?: string  // CSS background-position (default: 'center')
   bgImageSize?: string      // CSS background-size (default: 'cover')
   bgImageMask?: string      // CSS mask-image for fade effects, e.g. linear-gradient fade-out
+  bgImageFade?: string      // gradient prepended to backgroundImage for bottom fade, e.g. linear-gradient(...)
   bgVignette?: boolean      // bottom-to-black gradient
 
   // Appearance
@@ -122,8 +123,8 @@ export const TOKENS: Record<string, TokenConfig> = {
       bgBase:          '#0a0b0d',
       bgImage:         '/super-remove-bg.png',
       bgImageSize:     '75%',
-      bgImagePosition: 'center 40%',
-      bgImageMask:     'linear-gradient(to bottom, black 0%, black 60%, transparent 88%)',
+      bgImagePosition: 'center',
+      bgImageFade:     'linear-gradient(to bottom, transparent 70%, #0a0b0d 95%)',
       bgOverlay:       'rgba(0,0,0,0.40)',
     },
   },

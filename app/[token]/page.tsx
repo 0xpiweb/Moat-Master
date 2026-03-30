@@ -326,7 +326,7 @@ export default async function TokenDashboard(
             <div
               className="fixed inset-0 pointer-events-none"
               style={{
-                backgroundImage:    `url('${theme.bgImage}')`,
+                backgroundImage:    theme.bgImageFade ? `${theme.bgImageFade}, url('${theme.bgImage}')` : `url('${theme.bgImage}')`,
                 backgroundSize:     theme.bgImageSize ?? 'cover',
                 backgroundPosition: theme.bgImagePosition ?? 'center',
                 backgroundRepeat:   'no-repeat',
