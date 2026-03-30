@@ -338,7 +338,7 @@ export default async function TokenDashboard(
             />
           )}
           {theme?.bgOverlay && (
-            <div className="fixed inset-0 pointer-events-none" style={{ backgroundColor: theme.bgOverlay, zIndex: 2 }} />
+            <div className="fixed inset-0 pointer-events-none" style={{ background: theme.bgOverlay, zIndex: 2 }} />
           )}
           {theme?.bgVignette && (
             <div className="fixed inset-0 pointer-events-none" style={{ background: 'linear-gradient(to bottom, transparent 55%, #000000 100%)', zIndex: 3 }} />

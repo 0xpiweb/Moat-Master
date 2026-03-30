@@ -122,7 +122,7 @@ export const TOKENS: Record<string, TokenConfig> = {
       bgImage:           '/super-bg.jpg',
       bgImageSize:       '75%',
       bgImagePosition:   'center 40%',
-      bgOverlay:         'rgba(0,0,0,0.75)',
+      bgOverlay:         'radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 55%, rgba(0,0,0,1) 100%)',
     },
   },
   HEFE: {
