@@ -32,6 +32,7 @@ export interface TokenConfig {
   ticker: string
   name: string
   supply: number
+  staticLp?: number   // override on-chain LP fetch (e.g. for V3 pools where address is unavailable)
   color: string
   colorRgb: string
   logo: string
@@ -303,13 +304,13 @@ export const TOKENS: Record<string, TokenConfig> = {
     ticker: 'VIT',
     name: '$VIT Hub',
     supply: 10_000_000_000,
+    staticLp: 1_650_000_000,
     color: '#00adb5',
     colorRgb: '0,173,181',
     logo: '/vitrene-logo.png',
     contracts: {
       token:  '0xde34C06de75FB446b5e7b8dd272D014F2A19009D',
       moat:   '0x940b7f7d73a504ec566157eebb0566b81d57e8f8',
-      // V3 pool key is 32 bytes — replace with the actual 20-byte pool contract address
       lpPair: '0x0000000000000000000000000000000000000000',
     },
     urls: {

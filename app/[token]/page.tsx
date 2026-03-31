@@ -58,7 +58,7 @@ export default async function TokenDashboard(
 
   const { staked, locked, burned } = moat
   const { dead, lp: primaryLp } = chain
-  const lp = primaryLp + extraLp
+  const lp = cfg.staticLp ?? (primaryLp + extraLp)
 
   // Universal burn: ERC-20 burn() destroys tokens (burned > dead); dead-wallet-send increases dead.
   // Math.max covers both patterns correctly.
