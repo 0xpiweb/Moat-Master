@@ -43,14 +43,10 @@ function fmt(n: number): string {
 
 const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
-interface Props {
-  colorRgb:    string
-  totalStaked: number
-  totalLocked: number
-  totalBurned: number
-}
+// Live ecosystem snapshot — update when pool grows
+const POOL_TOTAL = 288_850
 
-export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }: Props) {
+export default function MoatOptimizer() {
   const [amount,       setAmount]       = useState('')
   const [strategy,     setStrategy]     = useState<Strategy>('stake')
   const [days,         setDays]         = useState(365)
@@ -60,10 +56,7 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
   const avaxInput  = parseFloat(epochRewards) || 0
   const multiplier = getMultiplier(strategy, days)
   const userPoints = (lilAmount * multiplier) / 27121
-
-  const poolPoints  = (totalStaked * 1 + totalLocked * 3 + totalBurned * 10) / 27121
-  const totalPoints = poolPoints + userPoints
-  const share       = totalPoints > 0 ? userPoints / totalPoints : 0
+  const share      = userPoints > 0 ? userPoints / POOL_TOTAL : 0
 
   const biweekly = share * avaxInput
   const monthly  = biweekly * 2
@@ -251,7 +244,7 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
           )}
         </div>
         {statBox('Pool Share', userPoints > 0 ? (share * 100).toFixed(4) + '%' : '—')}
-        {statBox('Total Pool Points', poolPoints > 0 ? Math.round(totalPoints).toLocaleString('en-US') : '—')}
+        {statBox('Total Pool Points', '288.85K pts')}
       </div>
 
       {/* ── Bi-Weekly highlight ───────────────────────────────────── */}

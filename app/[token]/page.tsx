@@ -507,12 +507,7 @@ export default async function TokenDashboard(
 
           {/* Moat Optimizer — LIL only (communityTools includes 'calculator') */}
           {theme?.communityTools?.some(t => t.id === 'calculator') && (
-            <MoatOptimizer
-              colorRgb={cfg.colorRgb}
-              totalStaked={staked}
-              totalLocked={locked}
-              totalBurned={totalBurned}
-            />
+            <MoatOptimizer />
           )}
 
           {/* Generic shells for remaining tools */}
