@@ -59,9 +59,9 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
   const lilAmount  = parseFloat(amount)       || 0
   const avaxInput  = parseFloat(epochRewards) || 0
   const multiplier = getMultiplier(strategy, days)
-  const userPoints = lilAmount * multiplier
+  const userPoints = (lilAmount * multiplier) / 27121
 
-  const poolPoints  = totalStaked * 1 + totalLocked * 3 + totalBurned * 10
+  const poolPoints  = (totalStaked * 1 + totalLocked * 3 + totalBurned * 10) / 27121
   const totalPoints = poolPoints + userPoints
   const share       = totalPoints > 0 ? userPoints / totalPoints : 0
 
@@ -236,9 +236,22 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
 
       {/* ── Stats grid ────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        {statBox('Your Moat Points', userPoints > 0 ? fmt(userPoints) : '—')}
+        {/* Your Moat Points — whole number + effective multiplier */}
+        <div className="bg-black/40 border border-zinc-800 rounded-xl p-4">
+          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">
+            Your Moat Points
+          </span>
+          <span className="text-lg font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.01em' }}>
+            {userPoints > 0 ? Math.round(userPoints).toLocaleString('en-US') : '—'}
+          </span>
+          {userPoints > 0 && (
+            <p className="text-[10px] mt-1" style={{ color: PINK }}>
+              {multiplier.toFixed(2)}× effective
+            </p>
+          )}
+        </div>
         {statBox('Pool Share', userPoints > 0 ? (share * 100).toFixed(4) + '%' : '—')}
-        {statBox('Total Pool Points', poolPoints > 0 ? fmt(totalPoints) : '—')}
+        {statBox('Total Pool Points', poolPoints > 0 ? Math.round(totalPoints).toLocaleString('en-US') : '—')}
       </div>
 
       {/* ── Bi-Weekly highlight ───────────────────────────────────── */}
