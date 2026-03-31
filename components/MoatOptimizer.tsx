@@ -77,12 +77,28 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
     </div>
   )
 
+  const fillPct  = ((days - 7) / 723) * 100
+  const trackBg  = `linear-gradient(90deg, #ff007a 0%, #8b5cf6 ${fillPct}%, rgba(255,255,255,0.1) ${fillPct}%)`
+
+  const TICKS = [
+    { days: 90,  label: '90d'  },
+    { days: 180, label: '180d' },
+    { days: 365, label: '365d' },
+    { days: 730, label: '730d' },
+  ]
+
   return (
     <div
       id="calculator"
       className="border rounded-2xl p-6 mt-4 backdrop-blur-xl bg-zinc-900/50"
       style={{ borderColor: `rgba(${PINK_RGB},0.45)`, boxShadow: `0 0 28px rgba(${PINK_RGB},0.07)` }}
     >
+      <style>{`
+        .moat-slider { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; outline: none; cursor: pointer; }
+        .moat-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; cursor: pointer; box-shadow: 0 0 15px rgba(255,0,122,0.6), 0 0 0 2px rgba(255,0,122,0.3); transition: transform 0.15s ease; }
+        .moat-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        .moat-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: none; cursor: pointer; box-shadow: 0 0 15px rgba(255,0,122,0.6); }
+      `}</style>
       <p className="text-[10px] font-bold uppercase tracking-widest mb-5" style={{ color: PINK }}>
         Moat Optimizer
       </p>
@@ -123,18 +139,34 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
 
           {strategy === 'lock' && (
             <div>
-              <div className="flex justify-between items-center mb-1.5">
+              {/* Header: label + live readout */}
+              <div className="flex justify-between items-baseline mb-3">
                 <label className={labelCls + ' mb-0'}>Lock Duration</label>
-                <span className="text-xs font-bold text-white">{days}d · {multiplier.toFixed(2)}×</span>
+                <span className="text-sm font-black text-white" style={{ letterSpacing: '-0.01em' }}>
+                  {days}d &nbsp;·&nbsp;
+                  <span style={{ color: PINK }}>{multiplier.toFixed(2)}×</span>
+                </span>
               </div>
+
+              {/* Track */}
               <input
                 type="range" min={7} max={730} value={days}
                 onChange={e => setDays(Number(e.target.value))}
-                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-                style={{ accentColor: PINK }}
+                className="moat-slider w-full"
+                style={{ background: trackBg }}
               />
-              <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
-                <span>7d · 1×</span><span>730d · 5×</span>
+
+              {/* Tick marks */}
+              <div className="relative mt-2 h-4">
+                {TICKS.map(t => (
+                  <span
+                    key={t.days}
+                    className="absolute text-[10px] text-zinc-600 -translate-x-1/2"
+                    style={{ left: `${((t.days - 7) / 723) * 100}%` }}
+                  >
+                    {t.label}
+                  </span>
+                ))}
               </div>
             </div>
           )}
