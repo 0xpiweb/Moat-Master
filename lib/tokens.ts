@@ -22,6 +22,7 @@ export interface HubTheme {
   deltaPositiveColor?: string         // positive delta chip color (default '#00FF41')
   stripe?: [string, string, string]   // 3-color top/bottom stripe (e.g. BENSI pop-art)
   accentColor?: string                // market box accent override (default: cfg.color)
+  badgeColor?: string                 // pct badge + moat pill text/border override
   headerWhite?: boolean               // force header sub-text to #fff (for dark bg images)
   supplyValueWhite?: boolean          // force supply value number to #fff (LIL neon bg)
 }
@@ -329,6 +330,7 @@ export const TOKENS: Record<string, TokenConfig> = {
       headerWhite:      true,
       supplyValueWhite: true,
       accentColor:      '#ffffff',
+      badgeColor:       '#d4af37',
     },
   },
 }

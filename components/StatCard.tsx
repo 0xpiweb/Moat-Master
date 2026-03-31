@@ -21,6 +21,7 @@ interface StatCardProps {
   colorRgb: string
   variant?: 'light' | 'frosted'
   deltaPositiveColor?: string
+  badgeColor?: string
 }
 
 function fmt(n: number): string {
@@ -31,7 +32,7 @@ export default function StatCard({
   icon, iconSrc, iconNode, label, value, pct, delta, floorAtZero, wide,
   provenance, provenanceSrc, provenanceSrcAlt,
   tokenId, ticker, color, colorRgb,
-  variant, deltaPositiveColor = '#00FF41',
+  variant, deltaPositiveColor = '#00FF41', badgeColor,
 }: StatCardProps) {
   const field = label.toLowerCase().replace(/\s+/g, '_')
   const wideClass = wide ? ' col-span-2' : ''
@@ -59,7 +60,7 @@ export default function StatCard({
         {pct}%
       </span>
     ) : variant === 'frosted' ? (
-      <span className="text-xs font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: `rgba(${colorRgb},0.35)`, color }}>
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: `rgba(${colorRgb},0.35)`, color: badgeColor ?? color }}>
         {pct}%
       </span>
     ) : (

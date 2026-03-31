@@ -9,12 +9,13 @@ interface Props {
   color:       string      // brand color
   colorRgb:    string
   variant?:    'light' | 'frosted'  // undefined = default dark
+  badgeColor?: string
 }
 
 export default function SupplyBar({
   staked, locked, burned, lp, circulating,
   moatBurned, supply, color, colorRgb,
-  variant,
+  variant, badgeColor,
 }: Props) {
   const moatTotal = staked + locked + moatBurned
   const moatPct   = (moatTotal / supply * 100).toFixed(2)
@@ -72,8 +73,8 @@ export default function SupplyBar({
             Supply Distribution
           </span>
           <span
-            className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#121212] text-white border"
-            style={{ borderColor: `rgba(${colorRgb},0.6)` }}
+            className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#121212] border"
+            style={{ borderColor: badgeColor ?? `rgba(${colorRgb},0.6)`, color: badgeColor ?? '#fff' }}
           >
             {moatPct}% Secured in Moat
           </span>

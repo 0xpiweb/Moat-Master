@@ -129,6 +129,7 @@ export default async function TokenDashboard(
     colorRgb: cfg.colorRgb,
     variant: cv,
     deltaPositiveColor: dpc,
+    badgeColor: theme?.badgeColor,
   }
   const p = (v: number) => pct(v, cfg.supply)
   const ecosystem = Object.values(TOKENS).filter(t => t.id !== cfg.id)
@@ -425,6 +426,7 @@ export default async function TokenDashboard(
             color={cfg.color}
             colorRgb={cfg.colorRgb}
             variant={cv}
+            badgeColor={theme?.badgeColor}
           />
 
           {/* Action buttons */}
