@@ -8,6 +8,7 @@ import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
 import MarketTicker, { type MarketData } from '@/components/MarketTicker'
+import MoatOptimizer from '@/components/MoatOptimizer'
 
 export const revalidate = 60
 
@@ -504,8 +505,18 @@ export default async function TokenDashboard(
             </div>
           )}
 
-          {/* Community Tool shells — logic added per tool in next step */}
-          {theme?.communityTools && theme.communityTools.map(tool => (
+          {/* Moat Optimizer — LIL only (communityTools includes 'calculator') */}
+          {theme?.communityTools?.some(t => t.id === 'calculator') && (
+            <MoatOptimizer
+              colorRgb={cfg.colorRgb}
+              totalStaked={staked}
+              totalLocked={locked}
+              totalBurned={totalBurned}
+            />
+          )}
+
+          {/* Generic shells for remaining tools */}
+          {theme?.communityTools?.filter(t => t.id !== 'calculator').map(tool => (
             <div
               key={tool.id}
               id={tool.id}
