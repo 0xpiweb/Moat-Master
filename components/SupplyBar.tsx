@@ -86,9 +86,9 @@ export default function SupplyBar({
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-1">
           {segments.map(s => (
-            <span key={s.label} className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-              {s.label} <span className="text-zinc-600">{(s.value / supply * 100).toFixed(2)}%</span>
+            <span key={s.label} className="flex items-center gap-1.5 text-xs font-semibold text-white [text-shadow:none]" style={{ letterSpacing: '0.02em' }}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+              {s.label} <span className="text-white/70">{(s.value / supply * 100).toFixed(2)}%</span>
             </span>
           ))}
         </div>
