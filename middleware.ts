@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 
 const DOMAIN_SLUG: Record<string, string> = {
   'lil-hub.vercel.app':        'lil',
+  'moat-lil-hub.vercel.app':   'lil',
   'supercycle-hub.vercel.app': 'supercycle',
   'hefe-hub.vercel.app':       'hefe',
   'freak-hub.vercel.app':      'freak',
