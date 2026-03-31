@@ -23,6 +23,7 @@ export interface HubTheme {
   stripe?: [string, string, string]   // 3-color top/bottom stripe (e.g. BENSI pop-art)
   accentColor?: string                // market box accent override (default: cfg.color)
   badgeColor?: string                 // pct badge + moat pill text/border override
+  communityTools?: Array<{ id: string; label: string }>  // nav anchors + shell cards below Rewards Ledger
   headerWhite?: boolean               // force header sub-text to #fff (for dark bg images)
   supplyValueWhite?: boolean          // force supply value number to #fff (LIL neon bg)
 }
@@ -91,6 +92,10 @@ export const TOKENS: Record<string, TokenConfig> = {
       bgVignette:    true,
       headerWhite:        true,
       supplyValueWhite:   true,
+      communityTools: [
+        { id: 'calculator',      label: 'Calculator' },
+        { id: 'rewards-checker', label: 'Rewards Checker' },
+      ],
     },
     rewards: [
       { label: 'Epoch 27 Rewards',   amount: '30.41 $AVAX',    period: '3/30 - 4/12' },

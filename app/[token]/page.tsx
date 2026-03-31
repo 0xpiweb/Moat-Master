@@ -363,7 +363,8 @@ export default async function TokenDashboard(
         <div className="max-w-6xl mx-auto px-4 py-10">
 
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div className="min-w-0">
             <h1 className={titleClass}>
               <div
                 className={logoRingClass}
@@ -388,6 +389,21 @@ export default async function TokenDashboard(
                 <span className={dotLabelClass}>Live Network</span>
               </span>
             </p>
+            </div>
+            {theme?.communityTools && (
+              <nav className="hidden sm:flex flex-col items-end gap-2 pt-1 flex-shrink-0">
+                {theme.communityTools.map(tool => (
+                  <a
+                    key={tool.id}
+                    href={`#${tool.id}`}
+                    className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105"
+                    style={{ borderColor: `rgba(${cfg.colorRgb},0.5)`, color: cfg.color, backgroundColor: 'rgba(0,0,0,0.4)' }}
+                  >
+                    {tool.label}
+                  </a>
+                ))}
+              </nav>
+            )}
           </div>
 
           {/* Market Metrics */}
@@ -487,6 +503,21 @@ export default async function TokenDashboard(
               </div>
             </div>
           )}
+
+          {/* Community Tool shells — logic added per tool in next step */}
+          {theme?.communityTools && theme.communityTools.map(tool => (
+            <div
+              key={tool.id}
+              id={tool.id}
+              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-4 min-h-[140px] flex flex-col gap-3"
+              style={{ borderColor: `rgba(${cfg.colorRgb},0.45)` }}
+            >
+              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{tool.label}</p>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-zinc-700 text-sm">Coming soon</span>
+              </div>
+            </div>
+          ))}
 
           <p className={timestampClass}>
             Last live check: {updatedAt}
