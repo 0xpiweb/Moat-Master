@@ -7,10 +7,31 @@ const PINK_RGB = '255,0,122'
 
 type Strategy = 'stake' | 'lock' | 'burn'
 
+// Exact piecewise breakpoints from lockup data
+const BREAKPOINTS = [
+  { days: 1,   mult: 2.04 },
+  { days: 7,   mult: 2.11 },
+  { days: 30,  mult: 2.31 },
+  { days: 90,  mult: 2.73 },
+  { days: 180, mult: 3.23 },
+  { days: 365, mult: 4.00 },
+  { days: 730, mult: 5.00 },
+]
+
 function getMultiplier(strategy: Strategy, days: number): number {
   if (strategy === 'stake') return 1
   if (strategy === 'burn')  return 10
-  return 1 + ((days - 7) / 723) * 4   // linear 1× @ 7d → 5× @ 730d
+  // Piecewise linear interpolation between breakpoints
+  if (days <= BREAKPOINTS[0].days) return BREAKPOINTS[0].mult
+  if (days >= BREAKPOINTS[BREAKPOINTS.length - 1].days) return BREAKPOINTS[BREAKPOINTS.length - 1].mult
+  for (let i = 0; i < BREAKPOINTS.length - 1; i++) {
+    const lo = BREAKPOINTS[i], hi = BREAKPOINTS[i + 1]
+    if (days >= lo.days && days <= hi.days) {
+      const t = (days - lo.days) / (hi.days - lo.days)
+      return lo.mult + t * (hi.mult - lo.mult)
+    }
+  }
+  return BREAKPOINTS[0].mult
 }
 
 function fmt(n: number): string {
@@ -20,14 +41,7 @@ function fmt(n: number): string {
   return n.toFixed(2)
 }
 
-const LOCK_ROWS = [
-  { label: '7 days',   days: 7   },
-  { label: '30 days',  days: 30  },
-  { label: '90 days',  days: 90  },
-  { label: '180 days', days: 180 },
-  { label: '365 days', days: 365 },
-  { label: '730 days', days: 730 },
-]
+const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
 interface Props {
   colorRgb:    string
@@ -47,16 +61,19 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
   const multiplier = getMultiplier(strategy, days)
   const userPoints = lilAmount * multiplier
 
-  // Pool estimate: staked×1, locked midpoint×3, burned×10
   const poolPoints  = totalStaked * 1 + totalLocked * 3 + totalBurned * 10
   const totalPoints = poolPoints + userPoints
   const share       = totalPoints > 0 ? userPoints / totalPoints : 0
 
-  const biweekly = share * avaxInput   // 1 epoch = bi-weekly
-  const monthly  = biweekly * 2        // ~2 epochs / month
-  const yearly   = biweekly * 26       // 26 epochs / year
+  const biweekly = share * avaxInput
+  const monthly  = biweekly * 2
+  const yearly   = biweekly * 26
 
   const hasResult = avaxInput > 0 && userPoints > 0
+
+  // Slider fill (min=1, max=730)
+  const fillPct = ((days - 1) / 729) * 100
+  const trackBg = `linear-gradient(90deg, ${PINK} 0%, #8b5cf6 ${fillPct}%, rgba(255,255,255,0.1) ${fillPct}%)`
 
   const inputCls = [
     'w-full bg-black/60 border border-zinc-700 rounded-xl px-4 py-2.5',
@@ -77,16 +94,6 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
     </div>
   )
 
-  const fillPct  = ((days - 7) / 723) * 100
-  const trackBg  = `linear-gradient(90deg, #ff007a 0%, #8b5cf6 ${fillPct}%, rgba(255,255,255,0.1) ${fillPct}%)`
-
-  const TICKS = [
-    { days: 90,  label: '90d'  },
-    { days: 180, label: '180d' },
-    { days: 365, label: '365d' },
-    { days: 730, label: '730d' },
-  ]
-
   return (
     <div
       id="calculator"
@@ -94,11 +101,12 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
       style={{ borderColor: `rgba(${PINK_RGB},0.45)`, boxShadow: `0 0 28px rgba(${PINK_RGB},0.07)` }}
     >
       <style>{`
-        .moat-slider { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; outline: none; cursor: pointer; }
-        .moat-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; cursor: pointer; box-shadow: 0 0 15px rgba(255,0,122,0.6), 0 0 0 2px rgba(255,0,122,0.3); transition: transform 0.15s ease; }
+        .moat-slider { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; outline: none; cursor: pointer; width: 100%; }
+        .moat-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; cursor: pointer; box-shadow: 0 0 15px #ff007a, 0 0 0 2px rgba(255,0,122,0.3); transition: transform 0.15s ease; }
         .moat-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
-        .moat-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: none; cursor: pointer; box-shadow: 0 0 15px rgba(255,0,122,0.6); }
+        .moat-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: none; cursor: pointer; box-shadow: 0 0 15px #ff007a; }
       `}</style>
+
       <p className="text-[10px] font-bold uppercase tracking-widest mb-5" style={{ color: PINK }}>
         Moat Optimizer
       </p>
@@ -139,33 +147,35 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
 
           {strategy === 'lock' && (
             <div>
-              {/* Header: label + live readout */}
+              {/* Live readout */}
               <div className="flex justify-between items-baseline mb-3">
                 <label className={labelCls + ' mb-0'}>Lock Duration</label>
-                <span className="text-sm font-black text-white" style={{ letterSpacing: '-0.01em' }}>
-                  {days}d &nbsp;·&nbsp;
-                  <span style={{ color: PINK }}>{multiplier.toFixed(2)}×</span>
+                <span className="text-sm font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.01em' }}>
+                  {days}d&nbsp;·&nbsp;<span style={{ color: PINK }}>{multiplier.toFixed(2)}×</span>
                 </span>
               </div>
 
-              {/* Track */}
+              {/* Slider */}
               <input
-                type="range" min={7} max={730} value={days}
+                type="range" min={1} max={730} value={days}
                 onChange={e => setDays(Number(e.target.value))}
-                className="moat-slider w-full"
+                className="moat-slider"
                 style={{ background: trackBg }}
               />
 
-              {/* Tick marks */}
-              <div className="relative mt-2 h-4">
-                {TICKS.map(t => (
-                  <span
-                    key={t.days}
-                    className="absolute text-[10px] text-zinc-600 -translate-x-1/2"
-                    style={{ left: `${((t.days - 7) / 723) * 100}%` }}
+              {/* Quick Select */}
+              <div className="flex gap-1.5 mt-3 flex-wrap">
+                {QUICK_SELECT.map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setDays(d)}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all [text-shadow:none]"
+                    style={days === d
+                      ? { backgroundColor: PINK, borderColor: PINK, color: '#fff' }
+                      : { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)', color: '#71717a' }}
                   >
-                    {t.label}
-                  </span>
+                    {d >= 365 ? `${d / 365}yr` : `${d}d`}
+                  </button>
                 ))}
               </div>
             </div>
@@ -188,29 +198,32 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-zinc-800">
-                  <th className="text-left px-3 py-2 text-zinc-500 font-semibold uppercase tracking-wider">Strategy</th>
+                  <th className="text-left px-3 py-2 text-zinc-500 font-semibold uppercase tracking-wider">Method</th>
+                  <th className="text-left px-3 py-2 text-zinc-500 font-semibold uppercase tracking-wider">Duration</th>
                   <th className="text-right px-3 py-2 text-zinc-500 font-semibold uppercase tracking-wider">Multiplier</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
                 <tr>
                   <td className="px-3 py-2 text-zinc-300">🏛️ Stake</td>
+                  <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold text-white">1.00×</td>
                 </tr>
-                {LOCK_ROWS.map(row => {
-                  const m   = getMultiplier('lock', row.days)
-                  const active = strategy === 'lock' && Math.abs(days - row.days) < 15
+                {BREAKPOINTS.map(row => {
+                  const active = strategy === 'lock' && days === row.days
                   return (
-                    <tr key={row.days}>
-                      <td className="px-3 py-2 text-zinc-400">🔐 Lock {row.label}</td>
+                    <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => { setStrategy('lock'); setDays(row.days) }}>
+                      <td className="px-3 py-2 text-zinc-400">🔐 Lock</td>
+                      <td className="px-3 py-2 text-zinc-400">{row.days}d</td>
                       <td className="px-3 py-2 text-right font-bold" style={{ color: active ? PINK : '#fff' }}>
-                        {m.toFixed(2)}×
+                        {row.mult.toFixed(2)}×
                       </td>
                     </tr>
                   )
                 })}
                 <tr>
                   <td className="px-3 py-2 text-zinc-300">🔥 Burn</td>
+                  <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold text-white">10.00×</td>
                 </tr>
               </tbody>
@@ -221,14 +234,14 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
 
       <div className="border-t border-zinc-800 mb-5" />
 
-      {/* ── Row 2: Stats grid ─────────────────────────────────────── */}
+      {/* ── Stats grid ────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {statBox('Your Moat Points', userPoints > 0 ? fmt(userPoints) : '—')}
         {statBox('Pool Share', userPoints > 0 ? (share * 100).toFixed(4) + '%' : '—')}
         {statBox('Total Pool Points', poolPoints > 0 ? fmt(totalPoints) : '—')}
       </div>
 
-      {/* ── Row 3: Bi-Weekly highlight ────────────────────────────── */}
+      {/* ── Bi-Weekly highlight ───────────────────────────────────── */}
       <div
         className="border rounded-xl p-5 mb-4 text-center"
         style={{ backgroundColor: `rgba(${PINK_RGB},0.07)`, borderColor: `rgba(${PINK_RGB},0.35)` }}
@@ -242,29 +255,19 @@ export default function MoatOptimizer({ totalStaked, totalLocked, totalBurned }:
           </span>
           {hasResult && <span className="text-zinc-400 text-lg font-medium">AVAX</span>}
         </div>
-        {hasResult && (
-          <p className="text-xs text-zinc-500 mt-1.5">based on live pool snapshot</p>
-        )}
+        {hasResult && <p className="text-xs text-zinc-500 mt-1.5">based on live pool snapshot</p>}
       </div>
 
-      {/* ── Row 4: Monthly + Yearly ───────────────────────────────── */}
+      {/* ── Monthly + Yearly ──────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-black/40 border border-zinc-800 rounded-xl p-4 text-center">
-          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">
-            Monthly Reward
-          </span>
-          <span className="text-xl font-black text-white [text-shadow:none]">
-            {hasResult ? monthly.toFixed(4) : '—'}
-          </span>
+          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">Monthly Reward</span>
+          <span className="text-xl font-black text-white [text-shadow:none]">{hasResult ? monthly.toFixed(4) : '—'}</span>
           {hasResult && <p className="text-xs text-zinc-500 mt-0.5">AVAX · ~2 epochs</p>}
         </div>
         <div className="bg-black/40 border border-zinc-800 rounded-xl p-4 text-center">
-          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">
-            Yearly Reward
-          </span>
-          <span className="text-xl font-black text-white [text-shadow:none]">
-            {hasResult ? yearly.toFixed(4) : '—'}
-          </span>
+          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">Yearly Reward</span>
+          <span className="text-xl font-black text-white [text-shadow:none]">{hasResult ? yearly.toFixed(4) : '—'}</span>
           {hasResult && <p className="text-xs text-zinc-500 mt-0.5">AVAX · 26 epochs</p>}
         </div>
       </div>
