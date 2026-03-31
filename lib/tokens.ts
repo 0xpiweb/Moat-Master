@@ -297,4 +297,37 @@ export const TOKENS: Record<string, TokenConfig> = {
       accentColor:     '#00d1ff',
     },
   },
+  VITRENE: {
+    id: 'VITRENE',
+    slug: 'vitrene',
+    ticker: 'VIT',
+    name: '$VIT Hub',
+    supply: 1_000_000_000,   // ⚠️ placeholder — confirm actual supply
+    color: '#00adb5',
+    colorRgb: '0,173,181',
+    logo: '/vitrene-logo.png',
+    contracts: {
+      token:  '0xde34C06de75FB446b5e7b8dd272D014F2A19009D',
+      moat:   '0x940b7f7d73a504ec566157eebb0566b81d57e8f8',
+      // V3 pool key is 32 bytes — replace with the actual 20-byte pool contract address
+      lpPair: '0x0000000000000000000000000000000000000000',
+    },
+    urls: {
+      moat:     'https://moats.app/moat/0x940b7f7d73a504ec566157eebb0566b81d57e8f8',
+      buy:      'https://app.uniswap.org/swap?outputCurrency=0xde34C06de75FB446b5e7b8dd272D014F2A19009D&chain=avalanche',
+      burn:     'https://snowtrace.io/token/0xde34C06de75FB446b5e7b8dd272D014F2A19009D?a=0x000000000000000000000000000000000000dead',
+      lp:       'https://dexscreener.com/avalanche/0x1ed3c7234ed58700cb99dfd5eb1bad4242855ad8995b6dc5d25a9c12821fefbc',
+      dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0x1ed3c7234ed58700cb99dfd5eb1bad4242855ad8995b6dc5d25a9c12821fefbc',
+      dexChart: 'https://dexscreener.com/avalanche/0x1ed3c7234ed58700cb99dfd5eb1bad4242855ad8995b6dc5d25a9c12821fefbc',
+    },
+    hubUrl: 'https://vitrene-hub.vercel.app',
+    theme: {
+      bgBase:           '#00adb5',
+      cardVariant:      'frosted',
+      buttonVariant:    'ghost',
+      headerWhite:      true,
+      supplyValueWhite: true,
+      accentColor:      '#ffffff',
+    },
+  },
 }
