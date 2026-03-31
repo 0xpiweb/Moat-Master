@@ -302,7 +302,7 @@ export const TOKENS: Record<string, TokenConfig> = {
     slug: 'vitrene',
     ticker: 'VIT',
     name: '$VIT Hub',
-    supply: 1_000_000_000,   // ⚠️ placeholder — confirm actual supply
+    supply: 10_000_000_000,
     color: '#00adb5',
     colorRgb: '0,173,181',
     logo: '/vitrene-logo.png',
