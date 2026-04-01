@@ -325,13 +325,13 @@ export default function RewardChecker() {
               <span className="text-6xl font-black [text-shadow:none] leading-none" style={{ color: '#22d3ee' }}>
                 {result.pendingAvax.toFixed(6)}
               </span>
-              <div className="flex items-center gap-3 pl-5">
+              <div className="flex items-center pl-3">
                 <span className="text-zinc-400 text-sm font-medium leading-none">$AVAX</span>
                 <a
                   href={`https://moats.app/moat/${MOAT_CONTRACT.toLowerCase()}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none] whitespace-nowrap"
+                  className="ml-10 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none] whitespace-nowrap"
                   style={{
                     backgroundColor: 'rgba(34,211,238,0.12)',
                     borderColor:     'rgba(34,211,238,0.4)',
@@ -391,6 +391,7 @@ export default function RewardChecker() {
           </div>
 
           {/* Row 4 — 3 cols: Moat Position ──────────────────────────────────── */}
+          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-1">Your Moat Position</p>
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
               <span className={lbl}>Staked</span>
