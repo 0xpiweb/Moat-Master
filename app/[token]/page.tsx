@@ -399,7 +399,12 @@ export default async function TokenDashboard(
                     key={tool.id}
                     href={`#${tool.id}`}
                     className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105 whitespace-nowrap"
-                    style={{ borderColor: `rgba(${cfg.colorRgb},0.5)`, color: cfg.color, backgroundColor: 'rgba(0,0,0,0.4)' }}
+                    style={{
+                      backgroundColor: 'rgba(34,211,238,0.12)',
+                      borderColor:     'rgba(34,211,238,0.45)',
+                      color:           '#67e8f9',
+                      boxShadow:       '0 0 8px rgba(34,211,238,0.1)',
+                    }}
                   >
                     {tool.label}
                   </a>
