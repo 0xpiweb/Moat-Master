@@ -363,6 +363,14 @@ export default async function TokenDashboard(
 
         <div className="max-w-6xl mx-auto px-4 py-10">
 
+          {/* Community Tools nav — rendered first so tabs are always visible without scrolling */}
+          {theme?.communityTools && theme.communityTools.length > 0 && (
+            <CommunityTools
+              tools={theme.communityTools}
+              colorRgb={cfg.colorRgb}
+            />
+          )}
+
           {/* Header */}
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="min-w-0">
@@ -489,14 +497,6 @@ export default async function TokenDashboard(
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Community Tools (tabbed) — only rendered for tokens with communityTools */}
-          {theme?.communityTools && theme.communityTools.length > 0 && (
-            <CommunityTools
-              tools={theme.communityTools}
-              colorRgb={cfg.colorRgb}
-            />
           )}
 
           <p className={timestampClass}>
