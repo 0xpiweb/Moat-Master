@@ -319,25 +319,25 @@ export default function RewardChecker() {
             style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: 'rgba(34,211,238,0.25)' }}
           >
             <span className={lbl + ' justify-center'}>Pending Rewards (Claimable)</span>
-            <div className="flex items-baseline justify-center gap-2 mt-1">
-              <span className="text-3xl font-black [text-shadow:none] leading-tight" style={{ color: '#22d3ee' }}>
-                {result.pendingAvax.toFixed(6)}
-              </span>
-              <span className="text-zinc-400 text-sm font-medium">AVAX</span>
-            </div>
-            <div className="flex justify-center mt-3">
+            <div className="flex items-center justify-center gap-3 mt-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-black [text-shadow:none] leading-none" style={{ color: '#22d3ee' }}>
+                  {result.pendingAvax.toFixed(6)}
+                </span>
+                <span className="text-zinc-400 text-base font-medium">AVAX</span>
+              </div>
               <a
                 href={`https://moats.app/moat/${MOAT_CONTRACT.toLowerCase()}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none]"
+                className="px-4 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none] flex-shrink-0"
                 style={{
                   backgroundColor: 'rgba(34,211,238,0.12)',
                   borderColor:     'rgba(34,211,238,0.4)',
                   color:           '#22d3ee',
                 }}
               >
-                Claim on Moat
+                Claim
               </a>
             </div>
           </div>
