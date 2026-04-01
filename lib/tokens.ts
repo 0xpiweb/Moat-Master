@@ -93,8 +93,9 @@ export const TOKENS: Record<string, TokenConfig> = {
       headerWhite:        true,
       supplyValueWhite:   true,
       communityTools: [
-        { id: 'calculator',      label: 'Calculator' },
-        { id: 'rewards-checker', label: 'Rewards Checker' },
+        { id: 'calculator',      label: 'Moat Calculator' },
+        { id: 'rewards-checker', label: 'Reward Checker'  },
+        { id: 'moat-explorer',   label: 'Moat Explorer'   },
       ],
     },
     rewards: [

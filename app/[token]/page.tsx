@@ -8,7 +8,7 @@ import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
 import MarketTicker, { type MarketData } from '@/components/MarketTicker'
-import MoatOptimizer from '@/components/MoatOptimizer'
+import CommunityTools from '@/components/CommunityTools'
 
 export const revalidate = 60
 
@@ -391,20 +391,6 @@ export default async function TokenDashboard(
               </span>
             </p>
             </div>
-            {theme?.communityTools && (
-              <nav className="hidden sm:flex flex-col items-end gap-2 pt-1 flex-shrink-0">
-                {theme.communityTools.map(tool => (
-                  <a
-                    key={tool.id}
-                    href={`#${tool.id}`}
-                    className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105"
-                    style={{ borderColor: `rgba(${cfg.colorRgb},0.5)`, color: cfg.color, backgroundColor: 'rgba(0,0,0,0.4)' }}
-                  >
-                    {tool.label}
-                  </a>
-                ))}
-              </nav>
-            )}
           </div>
 
           {/* Market Metrics */}
@@ -505,25 +491,13 @@ export default async function TokenDashboard(
             </div>
           )}
 
-          {/* Moat Optimizer — LIL only (communityTools includes 'calculator') */}
-          {theme?.communityTools?.some(t => t.id === 'calculator') && (
-            <MoatOptimizer />
+          {/* Community Tools (tabbed) — only rendered for tokens with communityTools */}
+          {theme?.communityTools && theme.communityTools.length > 0 && (
+            <CommunityTools
+              tools={theme.communityTools}
+              colorRgb={cfg.colorRgb}
+            />
           )}
-
-          {/* Generic shells for remaining tools */}
-          {theme?.communityTools?.filter(t => t.id !== 'calculator').map(tool => (
-            <div
-              key={tool.id}
-              id={tool.id}
-              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-4 min-h-[140px] flex flex-col gap-3"
-              style={{ borderColor: `rgba(${cfg.colorRgb},0.45)` }}
-            >
-              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{tool.label}</p>
-              <div className="flex-1 flex items-center justify-center">
-                <span className="text-zinc-700 text-sm">Coming soon</span>
-              </div>
-            </div>
-          ))}
 
           <p className={timestampClass}>
             Last live check: {updatedAt}
