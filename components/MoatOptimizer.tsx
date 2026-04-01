@@ -221,7 +221,9 @@ export default function MoatOptimizer() {
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
                 <tr>
-                  <td className="px-3 py-2 text-zinc-300">Stake</td>
+                  <td className="px-3 py-2 text-zinc-300">
+                    <span style={{ opacity: strategy === 'stake' ? 1 : 0.5 }} className="mr-1.5">🏛️</span>Stake
+                  </td>
                   <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'stake' ? PINK : '#fff' }}>1.00×</td>
                 </tr>
@@ -229,7 +231,9 @@ export default function MoatOptimizer() {
                   const active = strategy === 'lock' && days === row.days
                   return (
                     <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => { setStrategy('lock'); setDays(row.days) }}>
-                      <td className="px-3 py-2 text-zinc-400">Lock</td>
+                      <td className="px-3 py-2 text-zinc-400">
+                        <span style={{ opacity: active ? 1 : 0.5 }} className="mr-1.5">🔐</span>Lock
+                      </td>
                       <td className="px-3 py-2 text-zinc-400">{row.days}d</td>
                       <td className="px-3 py-2 text-right font-bold" style={{ color: active ? PINK : '#fff' }}>
                         {row.mult.toFixed(2)}×
@@ -238,7 +242,9 @@ export default function MoatOptimizer() {
                   )
                 })}
                 <tr>
-                  <td className="px-3 py-2 text-zinc-300">Burn</td>
+                  <td className="px-3 py-2 text-zinc-300">
+                    <span style={{ opacity: strategy === 'burn' ? 1 : 0.5 }} className="mr-1.5">🔥</span>Burn
+                  </td>
                   <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'burn' ? PINK : '#fff' }}>10.00×</td>
                 </tr>
