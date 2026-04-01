@@ -64,7 +64,7 @@ export default function StatCard({
         {pct}%
       </span>
     ) : (
-      <span className="bg-black text-[#22d3ee] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#22d3ee]/30">
+      <span className="bg-black text-[#67e8f9] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#67e8f9]/30">
         {pct}%
       </span>
     )
