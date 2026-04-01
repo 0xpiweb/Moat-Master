@@ -227,7 +227,9 @@ export default function MoatOptimizer() {
               <tbody className="divide-y divide-zinc-800/50">
                 <tr>
                   <td className="px-3 py-2 text-zinc-300">
-                    <span style={{ opacity: strategy === 'stake' ? 1 : 0.5 }} className="mr-1.5">🏛️</span>Stake
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[10px]" style={{ opacity: strategy === 'stake' ? 1 : 0.5 }}>🏛️</span>Stake
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'stake' ? PINK : '#fff' }}>1.00×</td>
@@ -237,7 +239,9 @@ export default function MoatOptimizer() {
                   return (
                     <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => { setStrategy('lock'); setDays(row.days) }}>
                       <td className="px-3 py-2 text-zinc-400">
-                        <span style={{ opacity: active ? 1 : 0.5 }} className="mr-1.5">🔐</span>Lock
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-[10px]" style={{ opacity: active ? 1 : 0.5 }}>🔐</span>Lock
+                        </span>
                       </td>
                       <td className="px-3 py-2 text-zinc-400">{row.days}d</td>
                       <td className="px-3 py-2 text-right font-bold" style={{ color: active ? PINK : '#fff' }}>
@@ -248,7 +252,9 @@ export default function MoatOptimizer() {
                 })}
                 <tr>
                   <td className="px-3 py-2 text-zinc-300">
-                    <span style={{ opacity: strategy === 'burn' ? 1 : 0.5 }} className="mr-1.5">🔥</span>Burn
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[10px]" style={{ opacity: strategy === 'burn' ? 1 : 0.5 }}>🔥</span>Burn
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'burn' ? PINK : '#fff' }}>10.00×</td>
