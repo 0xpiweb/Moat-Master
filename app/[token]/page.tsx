@@ -476,32 +476,58 @@ export default async function TokenDashboard(
             </div>
           </div>
 
-          {/* Rewards Ledger — only rendered when token has rewards data */}
+          {/* Rewards Ledger + NFT Boost — split row */}
           {cfg.rewards && cfg.rewards.length > 0 && (
-            <div className={`${legendClass} mt-4`}>
-              <p className={legendTitleClass}>Rewards Ledger</p>
-              <div className="divide-y divide-zinc-800">
-                {cfg.rewards.map((row) => (
+            <div className="flex flex-row gap-4 mt-4">
+
+              {/* Rewards Ledger — 2/3 width */}
+              <div className={`${legendClass} mt-0 w-2/3`}>
+                <p className={legendTitleClass}>Rewards Ledger</p>
+                <div className="divide-y divide-zinc-800">
+                  {cfg.rewards.map((row) => (
+                    <div
+                      key={row.label}
+                      className="grid items-center gap-x-3 py-2.5 first:pt-0 last:pb-0"
+                      style={{ gridTemplateColumns: '1fr 8rem 1fr' }}
+                    >
+                      <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
+                        {row.label}
+                      </span>
+                      <span
+                        className="text-sm font-bold tabular-nums text-right whitespace-nowrap"
+                        style={{ color: '#F59E0B' }}
+                      >
+                        {row.amount}
+                      </span>
+                      <span className={`text-xs text-right min-w-0 ${cv === 'light' ? 'text-gray-500' : 'text-zinc-500'}`}>
+                        {row.period}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* NFT Boost — 1/3 width */}
+              <div className={`${legendClass} mt-0 w-1/3`}>
+                <p className={legendTitleClass}>NFT Boost</p>
+                <div className="divide-y divide-zinc-800">
                   <div
-                    key={row.label}
                     className="grid items-center gap-x-3 py-2.5 first:pt-0 last:pb-0"
-                    style={{ gridTemplateColumns: '1fr 8rem 1fr' }}
+                    style={{ gridTemplateColumns: '1fr 8rem' }}
                   >
                     <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
-                      {row.label}
+                      Lil-B 1/1 Auction
                     </span>
                     <span
                       className="text-sm font-bold tabular-nums text-right whitespace-nowrap"
                       style={{ color: '#F59E0B' }}
                     >
-                      {row.amount}
-                    </span>
-                    <span className={`text-xs text-right min-w-0 ${cv === 'light' ? 'text-gray-500' : 'text-zinc-500'}`}>
-                      {row.period}
+                      2%
                     </span>
                   </div>
-                ))}
+                </div>
               </div>
+
             </div>
           )}
 
