@@ -8,7 +8,8 @@ import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
 import MarketTicker, { type MarketData } from '@/components/MarketTicker'
-import MoatOptimizer from '@/components/MoatOptimizer'
+import MoatOptimizer  from '@/components/MoatOptimizer'
+import RewardChecker  from '@/components/RewardChecker'
 
 export const revalidate = 60
 
@@ -538,15 +539,8 @@ export default async function TokenDashboard(
             </div>
           )}
           {theme?.communityTools?.some(t => t.id === 'rewards-checker') && (
-            <div
-              id="rewards-checker"
-              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-4 min-h-[140px] flex flex-col gap-3"
-              style={{ borderColor: `rgba(${cfg.colorRgb},0.45)` }}
-            >
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cfg.color }}>Reward Checker</p>
-              <div className="flex-1 flex items-center justify-center">
-                <span className="text-zinc-700 text-sm">Coming soon</span>
-              </div>
+            <div id="rewards-checker" className="mt-8">
+              <RewardChecker />
             </div>
           )}
           {theme?.communityTools?.some(t => t.id === 'moat-explorer') && (
