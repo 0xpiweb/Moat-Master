@@ -98,11 +98,11 @@ export default function SupplyBar({
 
   // Default dark theme with gradients
   const segments = [
-    { label: 'Staked',      value: staked,      gradient: 'linear-gradient(180deg,#00F0FF 0%,#0075FF 100%)', dot: '#00F0FF' },
-    { label: 'Locked',      value: locked,      gradient: 'linear-gradient(180deg,#BC00FF 0%,#7000FF 100%)', dot: '#BC00FF' },
-    { label: 'Burned',      value: burned,      gradient: 'linear-gradient(180deg,#FF005C 0%,#990037 100%)', dot: '#FF005C' },
-    { label: 'Liquidity',   value: lp,          gradient: 'linear-gradient(180deg,#FFE600 0%,#FFB800 100%)', dot: '#FFE600' },
-    { label: 'Circulating', value: circulating, gradient: 'linear-gradient(180deg,#00FF94 0%,#00C853 100%)', dot: '#00FF94' },
+    { label: 'Circulating', value: circulating, gradient: 'linear-gradient(180deg,#ff007a 0%,#c4005e 100%)', dot: '#ff007a' },
+    { label: 'Staked',      value: staked,      gradient: 'linear-gradient(180deg,#22d3ee 0%,#0e7490 100%)', dot: '#22d3ee' },
+    { label: 'Locked',      value: locked,      gradient: 'linear-gradient(180deg,#a78bfa 0%,#6d28d9 100%)', dot: '#a78bfa' },
+    { label: 'Liquidity',   value: lp,          gradient: 'linear-gradient(180deg,#fb923c 0%,#c2410c 100%)', dot: '#fb923c' },
+    { label: 'Burned',      value: burned,      gradient: 'linear-gradient(180deg,#f87171 0%,#b91c1c 100%)', dot: '#f87171' },
   ]
 
   return (
@@ -124,7 +124,7 @@ export default function SupplyBar({
       <div
         className="flex w-full h-3 rounded-full overflow-hidden gap-px mb-3"
         style={{
-          filter:    'drop-shadow(0 0 8px rgba(0,255,148,0.2))',
+          filter:    'drop-shadow(0 0 8px rgba(255,0,122,0.2))',
           borderTop: '1px solid rgba(255,255,255,0.3)',
         }}
       >
