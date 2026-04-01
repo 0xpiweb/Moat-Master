@@ -124,7 +124,7 @@ export default function MoatOptimizer() {
       `}</style>
 
       <p className="text-[10px] font-bold uppercase tracking-widest mb-5" style={{ color: PINK }}>
-        Moat Optimizer
+        Moat Calculator
       </p>
 
       {/* ── Row 1: Inputs + Multiplier Table ─────────────────────── */}
