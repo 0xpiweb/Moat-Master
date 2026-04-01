@@ -517,9 +517,14 @@ export default async function TokenDashboard(
                   <div className="flex items-center justify-between gap-2 py-2.5 first:pt-0">
                     <div className="flex items-center min-w-0">
                       <span className="flex-shrink-0 h-2 w-2 rounded-full mr-3" style={{ backgroundColor: '#4ade80' }} />
-                      <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
+                      <a
+                        href="https://salvor.io/collections/0x6e4d5114508d7e4888c113a3dc447ea9f988c7c2"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-sm min-w-0 truncate no-underline transition-opacity hover:opacity-70 ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}
+                      >
                         Lil-B 1/1 Auction
-                      </span>
+                      </a>
                     </div>
                     <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#F59E0B' }}>2%</span>
                   </div>
@@ -528,9 +533,14 @@ export default async function TokenDashboard(
                   <div className="flex items-center justify-between gap-2 py-2.5 last:pb-0">
                     <div className="flex items-center min-w-0">
                       <span className="flex-shrink-0 h-2 w-2 rounded-full mr-3" style={{ backgroundColor: '#f87171' }} />
-                      <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
+                      <a
+                        href="https://salvor.io/collections/0xbe581cc567a836aac07494c195217ae96eb8e692"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-sm min-w-0 truncate no-underline transition-opacity hover:opacity-70 ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}
+                      >
                         Legendary Lil Coq
-                      </span>
+                      </a>
                     </div>
                     <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#F59E0B' }}>3%</span>
                   </div>
