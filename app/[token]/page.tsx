@@ -513,13 +513,10 @@ export default async function TokenDashboard(
                 <p className={legendTitleClass}>NFT Boost</p>
                 <div className="divide-y divide-zinc-800">
 
-                  {/* Row 1 — active · green pulse */}
+                  {/* Row 1 — green dot · Lil-B 1/1 Auction */}
                   <div className="flex items-center justify-between gap-2 py-2.5 first:pt-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="relative flex-shrink-0 h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: '#4ade80' }} />
-                        <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#4ade80' }} />
-                      </span>
+                    <div className="flex items-center min-w-0">
+                      <span className="flex-shrink-0 h-2 w-2 rounded-full mr-3" style={{ backgroundColor: '#4ade80' }} />
                       <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
                         Lil-B 1/1 Auction
                       </span>
@@ -527,10 +524,10 @@ export default async function TokenDashboard(
                     <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#F59E0B' }}>2%</span>
                   </div>
 
-                  {/* Row 2 — inactive · red dot */}
+                  {/* Row 2 — red dot · Legendary Lil Coq */}
                   <div className="flex items-center justify-between gap-2 py-2.5 last:pb-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="flex-shrink-0 h-2 w-2 rounded-full" style={{ backgroundColor: '#f87171' }} />
+                    <div className="flex items-center min-w-0">
+                      <span className="flex-shrink-0 h-2 w-2 rounded-full mr-3" style={{ backgroundColor: '#f87171' }} />
                       <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
                         Legendary Lil Coq
                       </span>
