@@ -325,9 +325,21 @@ export default function RewardChecker() {
               </span>
               <span className="text-zinc-400 text-sm font-medium">AVAX</span>
             </div>
-            <p className={sub + ' text-center'}>
-              {result.pendingAvax > 0 ? 'Claimable on moats.app' : 'Nothing claimable yet'}
-            </p>
+            <div className="flex justify-center mt-3">
+              <a
+                href={`https://moats.app/moat/${MOAT_CONTRACT.toLowerCase()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none]"
+                style={{
+                  backgroundColor: 'rgba(34,211,238,0.12)',
+                  borderColor:     'rgba(34,211,238,0.4)',
+                  color:           '#22d3ee',
+                }}
+              >
+                Claim on Moat
+              </a>
+            </div>
           </div>
 
           {/* Row 2 — 3 cols: Moat Points · Pool Share · Est. Bi-Weekly ──────── */}
