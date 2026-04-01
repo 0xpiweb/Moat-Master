@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const PINK     = '#ff007a'
 const PINK_RGB = '255,0,122'
@@ -43,20 +43,43 @@ function fmt(n: number): string {
 
 const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
-// Live ecosystem snapshot — update when pool grows
-const POOL_TOTAL = 288_850
+// Static fallback — used if API is unavailable
+const POOL_TOTAL_FALLBACK = 288_850
+
+const MOAT_API =
+  'https://api.moats.app/api/moat-points/v2/all' +
+  '?contractAddress=0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393&chainId=43114'
 
 export default function MoatOptimizer() {
   const [amount,       setAmount]       = useState('')
   const [strategy,     setStrategy]     = useState<Strategy>('stake')
   const [days,         setDays]         = useState(365)
   const [epochRewards, setEpochRewards] = useState('')
+  const [liveTotalPts, setLiveTotalPts] = useState<number | null>(null)
+  const [apiLoading,   setApiLoading]   = useState(true)
+
+  useEffect(() => {
+    fetch(MOAT_API)
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+      .then((data: { leaderboard?: { points?: number }[] } | null) => {
+        if (data?.leaderboard?.length) {
+          const total = data.leaderboard.reduce((s, e) => s + (e.points ?? 0), 0)
+          if (total > 0) setLiveTotalPts(Math.round(total))
+        }
+        setApiLoading(false)
+      })
+  }, [])
+
+  const poolTotal  = liveTotalPts ?? POOL_TOTAL_FALLBACK
 
   const lilAmount  = parseFloat(amount)       || 0
   const avaxInput  = parseFloat(epochRewards) || 0
   const multiplier = getMultiplier(strategy, days)
   const userPoints = (lilAmount * multiplier) / 27121
-  const share      = userPoints > 0 ? userPoints / POOL_TOTAL : 0
+  // Dilution: user's simulated points are added to the pool, so denominator grows
+  const dilutedPool = poolTotal + userPoints
+  const share       = userPoints > 0 ? userPoints / dilutedPool : 0
 
   const biweekly = share * avaxInput
   const monthly  = biweekly * 2
@@ -243,8 +266,30 @@ export default function MoatOptimizer() {
             </p>
           )}
         </div>
-        {statBox('Pool Share', userPoints > 0 ? (share * 100).toFixed(4) + '%' : '—')}
-        {statBox('Total Pool Points', '288.85K pts')}
+        {/* Pool Share after dilution */}
+        <div className="bg-black/40 border border-zinc-800 rounded-xl p-4">
+          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">
+            Real Weight %
+          </span>
+          <span className="text-lg font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.01em' }}>
+            {userPoints > 0 ? (share * 100).toFixed(4) + '%' : '—'}
+          </span>
+          {userPoints > 0 && (
+            <p className="text-[10px] mt-1 text-zinc-600">after dilution</p>
+          )}
+        </div>
+        {/* Live pool total */}
+        <div className="bg-black/40 border border-zinc-800 rounded-xl p-4">
+          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">
+            Total Pool Points
+          </span>
+          <span className="text-lg font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.01em' }}>
+            {apiLoading ? '…' : fmt(poolTotal) + ' pts'}
+          </span>
+          <p className="text-[10px] mt-1" style={{ color: liveTotalPts ? '#22c55e' : '#71717a' }}>
+            {apiLoading ? 'fetching…' : liveTotalPts ? '● live' : '● cached'}
+          </p>
+        </div>
       </div>
 
       {/* ── Bi-Weekly highlight ───────────────────────────────────── */}
@@ -261,7 +306,11 @@ export default function MoatOptimizer() {
           </span>
           {hasResult && <span className="text-zinc-400 text-lg font-medium">AVAX</span>}
         </div>
-        {hasResult && <p className="text-xs text-zinc-500 mt-1.5">based on live pool snapshot</p>}
+        {hasResult && (
+          <p className="text-xs text-zinc-500 mt-1.5">
+            {liveTotalPts ? 'based on live pool · dilution included' : 'based on cached pool snapshot'}
+          </p>
+        )}
       </div>
 
       {/* ── Monthly + Yearly ──────────────────────────────────────── */}
