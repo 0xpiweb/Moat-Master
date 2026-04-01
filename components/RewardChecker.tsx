@@ -168,37 +168,43 @@ export default function RewardChecker() {
         })
         .catch((): [] => [])
 
-      // ── Cast to strict types (with null-safe defaults) ────────────────────
-      const EMPTY_USER: UserInfoReturn = { stakedAmount: 0n, totalUserBurn: 0n, stakingPoints: 0n, burnPoints: 0n, activeLockCount: 0n }
-      const EMPTY_LOCKS: LocksReturn   = { amounts: [], ends: [], points: [], originalDurations: [], lastUpdated: [], active: [] }
-      const EMPTY_PEND: PendingReturn  = { tokens: [], amounts: [] }
+      // ── Access by index — works for both named-object and array-tuple viem returns
+      type Tup5   = readonly [bigint,          bigint,          bigint,          bigint,          bigint]
+      type Tup6   = readonly [readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly boolean[]]
+      type Tup2   = readonly [readonly Address[], readonly bigint[]]
 
-      const userInfo = (rawUserInfo as unknown as UserInfoReturn | null) ?? EMPTY_USER
-      const locks    = (rawLocks    as unknown as LocksReturn    | null) ?? EMPTY_LOCKS
-      const pending  = (rawPending  as unknown as PendingReturn  | null) ?? EMPTY_PEND
-      const curPts   = (rawCurPts   as bigint | null)  ?? 0n
-      const totalPts = (rawTotalPts as bigint | null)  ?? 0n
-      const moatApi  = moatApiRaw   as MoatApiResponse | null
+      const ui = rawUserInfo as unknown as Tup5   | null
+      const lk = rawLocks    as unknown as Tup6   | null
+      const pd = rawPending  as unknown as Tup2   | null
+      const curPts   = (rawCurPts   as bigint | null) ?? 0n
+      const totalPts = (rawTotalPts as bigint | null) ?? 0n
+      const moatApi  = moatApiRaw as MoatApiResponse | null
 
       // ── Staked / Burned / Lock count ───────────────────────────────────────
-      const stakedAmount    = fmtE(userInfo.stakedAmount)
-      const totalBurnUser   = fmtE(userInfo.totalUserBurn)
-      const activeLockCount = Number(userInfo.activeLockCount)
+      const stakedAmount    = fmtE(ui?.[0])
+      const totalBurnUser   = fmtE(ui?.[1])
+      const activeLockCount = Number(ui?.[4] ?? 0n)
 
       // ── Parse locks ────────────────────────────────────────────────────────
+      const lockAmounts = lk?.[0] ?? []
+      const lockEnds    = lk?.[1] ?? []
+      const lockDurs    = lk?.[3] ?? []
+      const lockActive  = lk?.[5] ?? []
+
       const lockItems: LockItem[] = []
       let totalLockedUser = 0
-      for (let i = 0; i < locks.amounts.length; i++) {
-        const amt = fmtE(locks.amounts[i])
+      for (let i = 0; i < lockAmounts.length; i++) {
+        const amt = fmtE(lockAmounts[i])
         if (amt <= 0) continue
-        const endTs   = Number(locks.ends[i])
-        const durDays = Math.round(Number(locks.originalDurations[i]) / 86400)
-        if (locks.active[i]) totalLockedUser += amt
-        lockItems.push({ amount: amt, endTs, durDays, active: locks.active[i] })
+        const endTs   = Number(lockEnds[i] ?? 0n)
+        const durDays = Math.round(Number(lockDurs[i] ?? 0n) / 86400)
+        const active  = lockActive[i] ?? false
+        if (active) totalLockedUser += amt
+        lockItems.push({ amount: amt, endTs, durDays, active })
       }
 
       // ── Pending rewards ────────────────────────────────────────────────────
-      const pendingAvax = Array.from(pending.amounts).reduce((s, a) => s + fmtE(a), 0)
+      const pendingAvax = (pd?.[1] ?? []).reduce((s, a) => s + fmtE(a), 0)
 
       // ── Claimed history (best-effort) ──────────────────────────────────────
       const claimedTotal = claimLogs.reduce((s, log) => {
