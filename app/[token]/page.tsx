@@ -485,10 +485,10 @@ export default async function TokenDashboard(
 
           {/* Rewards Ledger + NFT Boost — split row */}
           {cfg.rewards && cfg.rewards.length > 0 && (
-            <div className="flex flex-row gap-4 mt-4">
+            <div className="flex flex-col md:flex-row gap-4 mt-4">
 
-              {/* Rewards Ledger — 2/3 width */}
-              <div className={`${legendClass} mt-0 w-2/3`}>
+              {/* Rewards Ledger — full width on mobile, 2/3 on desktop */}
+              <div className={`${legendClass} mt-0 w-full md:w-2/3`}>
                 <p className={legendTitleClass}>Rewards Ledger</p>
                 <div className="divide-y divide-zinc-800">
                   {cfg.rewards.map((row) => (
@@ -514,8 +514,8 @@ export default async function TokenDashboard(
                 </div>
               </div>
 
-              {/* NFT Boost — 1/3 width */}
-              <div className={`${legendClass} mt-0 w-1/3`}>
+              {/* NFT Boost — full width on mobile, 1/3 on desktop */}
+              <div className={`${legendClass} mt-0 w-full md:w-1/3`}>
                 <p className={legendTitleClass}>NFT Boost</p>
                 <div className="divide-y divide-zinc-800">
 
