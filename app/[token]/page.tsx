@@ -8,7 +8,7 @@ import { supabase, type SnapshotRow } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import SupplyBar from '@/components/SupplyBar'
 import MarketTicker, { type MarketData } from '@/components/MarketTicker'
-import CommunityTools from '@/components/CommunityTools'
+import MoatOptimizer from '@/components/MoatOptimizer'
 
 export const revalidate = 60
 
@@ -391,6 +391,20 @@ export default async function TokenDashboard(
               </span>
             </p>
             </div>
+            {theme?.communityTools && theme.communityTools.length > 0 && (
+              <nav className="hidden sm:flex flex-row items-start gap-2 pt-1 flex-shrink-0">
+                {theme.communityTools.map(tool => (
+                  <a
+                    key={tool.id}
+                    href={`#${tool.id}`}
+                    className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105 whitespace-nowrap"
+                    style={{ borderColor: `rgba(${cfg.colorRgb},0.5)`, color: cfg.color, backgroundColor: 'rgba(0,0,0,0.4)' }}
+                  >
+                    {tool.label}
+                  </a>
+                ))}
+              </nav>
+            )}
           </div>
 
           {/* Market Metrics */}
@@ -491,12 +505,35 @@ export default async function TokenDashboard(
             </div>
           )}
 
-          {/* Community Tools — below Rewards Ledger */}
-          {theme?.communityTools && theme.communityTools.length > 0 && (
-            <CommunityTools
-              tools={theme.communityTools}
-              colorRgb={cfg.colorRgb}
-            />
+          {/* Community Tool sections */}
+          {theme?.communityTools?.some(t => t.id === 'calculator') && (
+            <div id="calculator" className="mt-4">
+              <MoatOptimizer />
+            </div>
+          )}
+          {theme?.communityTools?.some(t => t.id === 'rewards-checker') && (
+            <div
+              id="rewards-checker"
+              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-4 min-h-[140px] flex flex-col gap-3"
+              style={{ borderColor: `rgba(${cfg.colorRgb},0.45)` }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cfg.color }}>Reward Checker</p>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-zinc-700 text-sm">Coming soon</span>
+              </div>
+            </div>
+          )}
+          {theme?.communityTools?.some(t => t.id === 'moat-explorer') && (
+            <div
+              id="moat-explorer"
+              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-4 min-h-[140px] flex flex-col gap-3"
+              style={{ borderColor: `rgba(${cfg.colorRgb},0.45)` }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cfg.color }}>Moat Explorer</p>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-zinc-700 text-sm">Coming soon</span>
+              </div>
+            </div>
           )}
 
           <p className={timestampClass}>
