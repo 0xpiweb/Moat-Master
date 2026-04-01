@@ -264,9 +264,9 @@ export default function RewardChecker() {
   }
 
   // ── Shared style constants ─────────────────────────────────────────────────
-  const card = 'bg-black/40 border border-zinc-800 rounded-xl p-4'
-  const lbl  = 'text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5'
-  const val  = 'text-lg font-black text-white [text-shadow:none]'
+  const card = 'bg-black/40 border border-zinc-800 rounded-xl px-4 py-3'
+  const lbl  = 'text-[10px] text-zinc-500 font-semibold uppercase tracking-wider block mb-1'
+  const val  = 'text-xl font-black text-white [text-shadow:none] leading-tight'
   const sub  = 'text-[10px] text-zinc-600 mt-0.5'
 
   return (
@@ -311,48 +311,55 @@ export default function RewardChecker() {
 
       {/* ── Results ────────────────────────────────────────────────────────── */}
       {result && !loading && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
 
-          {/* Row 1 — 6 stat cards, 3 per row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-
-            <div className={card}>
-              <span className={lbl}>Pending Rewards</span>
-              <span className={val}>{result.pendingAvax.toFixed(6)}</span>
-              <p className={sub}>
-                {result.pendingAvax > 0 ? 'Claimable on moats.app' : 'Nothing claimable yet'}
-              </p>
+          {/* Row 1 — Full-width Pending Rewards ─────────────────────────────── */}
+          <div
+            className="rounded-xl px-5 py-4 border"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: `rgba(${PINK_RGB},0.3)` }}
+          >
+            <span className={lbl}>Pending Rewards (Claimable)</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white [text-shadow:none] leading-tight">
+                {result.pendingAvax.toFixed(6)}
+              </span>
+              <span className="text-zinc-400 text-sm font-medium">AVAX</span>
             </div>
+            <p className={sub}>
+              {result.pendingAvax > 0 ? 'Claimable on moats.app' : 'Nothing claimable yet'}
+            </p>
+          </div>
 
+          {/* Row 2 — 3 cols: Moat Points · Pool Share · Est. Bi-Weekly ──────── */}
+          <div className="grid grid-cols-3 gap-3">
             <div className={card}>
               <span className={lbl}>Your Moat Points</span>
               <span className={val}>{fmtN(result.userPts)}</span>
-              <p className={sub}>Total pool: {fmtN(result.totalPts)} pts</p>
+              <p className={sub}>Pool: {fmtN(result.totalPts)} pts</p>
             </div>
-
             <div className={card}>
               <span className={lbl}>Pool Share</span>
               <span className={val}>{(result.shareRat * 100).toFixed(4)}%</span>
-              <p className={sub}>{fmtN(result.userPts)} / {fmtN(result.totalPts)} pts</p>
+              <p className={sub}>{fmtN(result.userPts)} / {fmtN(result.totalPts)}</p>
             </div>
-
-            {/* Est. Bi-Weekly — pink accent border + value */}
             <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
               <span className={lbl}>Est. Bi-Weekly Rewards</span>
-              <span className="text-lg font-black [text-shadow:none]" style={{ color: PINK }}>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
                 {result.biWeekly.toFixed(4)}
               </span>
               <p className={sub}>
-                Monthly: ~{(result.biWeekly * 2).toFixed(4)} · Yearly: ~{(result.biWeekly * 26).toFixed(2)} AVAX
+                ~{(result.biWeekly * 26).toFixed(2)} AVAX / yr
               </p>
             </div>
+          </div>
 
+          {/* Row 3 — 2 cols: Already Claimed · Total Earned ─────────────────── */}
+          <div className="grid grid-cols-2 gap-3">
             <div className={card}>
               <span className={lbl}>Already Claimed</span>
               <span className={val}>{result.claimedTotal.toFixed(6)}</span>
               <p className={sub}>{result.claimCount} claim transaction(s)</p>
             </div>
-
             <div className={card}>
               <span className={lbl}>Total Earned (Lifetime)</span>
               <span className={val}>{(result.claimedTotal + result.pendingAvax).toFixed(6)}</span>
@@ -362,7 +369,7 @@ export default function RewardChecker() {
             </div>
           </div>
 
-          {/* Row 2 — 3 Moat Position cards */}
+          {/* Row 4 — 3 cols: Moat Position ──────────────────────────────────── */}
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
               <span className={lbl}>Staked</span>
@@ -381,7 +388,7 @@ export default function RewardChecker() {
             </div>
           </div>
 
-          {/* Row 3 — Active Locks list (conditional) */}
+          {/* Row 5 — Active Locks list (conditional) ────────────────────────── */}
           {result.locks.length > 0 && (
             <div className={card}>
               <p className={lbl + ' mb-3'}>Active Locks</p>
@@ -398,13 +405,13 @@ export default function RewardChecker() {
                   const mult = getLockMultiplier(lk.durDays)
 
                   return (
-                    <div key={i} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div key={i} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
                       <div>
                         <p className="text-sm font-semibold text-white [text-shadow:none]">
                           {fmtN(lk.amount)} LIL
                         </p>
-                        <p className="text-xs text-zinc-500">
-                          {dur} lock · {mult.toFixed(2)}× multiplier · Ends {endDate}
+                        <p className="text-[11px] text-zinc-500">
+                          {dur} · {mult.toFixed(2)}× · Ends {endDate}
                         </p>
                       </div>
                       <span
