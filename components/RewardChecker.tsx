@@ -319,26 +319,29 @@ export default function RewardChecker() {
             style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: 'rgba(34,211,238,0.25)' }}
           >
             <span className={lbl + ' justify-center'}>Pending Rewards (Claimable)</span>
-            <div className="flex items-center justify-center gap-3 mt-1">
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-black [text-shadow:none] leading-none" style={{ color: '#22d3ee' }}>
-                  {result.pendingAvax.toFixed(6)}
-                </span>
-                <span className="text-zinc-400 text-base font-medium">AVAX</span>
+            {/* 3-col grid: left spacer mirrors right group → number stays dead-center */}
+            <div className="grid items-center mt-2" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+              <div /> {/* left spacer */}
+              <span className="text-6xl font-black [text-shadow:none] leading-none" style={{ color: '#22d3ee' }}>
+                {result.pendingAvax.toFixed(6)}
+              </span>
+              <div className="flex items-center gap-3 pl-5">
+                <span className="text-zinc-400 text-sm font-medium leading-none">AVAX</span>
+                <a
+                  href={`https://moats.app/moat/${MOAT_CONTRACT.toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none] whitespace-nowrap"
+                  style={{
+                    backgroundColor: 'rgba(34,211,238,0.12)',
+                    borderColor:     'rgba(34,211,238,0.4)',
+                    color:           '#22d3ee',
+                    boxShadow:       '0 0 10px rgba(34,211,238,0.15)',
+                  }}
+                >
+                  Claim
+                </a>
               </div>
-              <a
-                href={`https://moats.app/moat/${MOAT_CONTRACT.toLowerCase()}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 [text-shadow:none] flex-shrink-0"
-                style={{
-                  backgroundColor: 'rgba(34,211,238,0.12)',
-                  borderColor:     'rgba(34,211,238,0.4)',
-                  color:           '#22d3ee',
-                }}
-              >
-                Claim
-              </a>
             </div>
           </div>
 
