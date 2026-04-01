@@ -236,11 +236,6 @@ export default async function TokenDashboard(
     ) : (
       // Default
       <div className="flex flex-wrap justify-center gap-2 py-6">
-        {/* Buy — Pink */}
-        <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-pink-500/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,0,122,0.35)] [box-sizing:border-box]">
-          🛒 Buy ${cfg.ticker}
-        </a>
         {/* Stake — Cyan */}
         <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-cyan-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(34,211,238,0.35)] [box-sizing:border-box]">
@@ -251,25 +246,30 @@ export default async function TokenDashboard(
           className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-violet-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(167,139,250,0.35)] [box-sizing:border-box]">
           🔐 Lock
         </a>
-        {/* Burn — Red */}
+        {/* Burn — Dark Orange */}
         <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-red-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(248,113,113,0.35)] [box-sizing:border-box]">
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-orange-600/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(234,88,12,0.35)] [box-sizing:border-box]">
           🔥 Burn
         </a>
-        {/* View Total Burn — Orange */}
+        {/* View Total Burn — Dark Orange */}
         <a href={cfg.urls.burn} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-orange-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(251,146,60,0.35)] [box-sizing:border-box]">
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-orange-600/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(234,88,12,0.35)] [box-sizing:border-box]">
           💀 View Total Burn
         </a>
-        {/* Live Chart — Cyan */}
+        {/* Live Chart — Light Orange (Liquidity) */}
         <a href={cfg.urls.dexChart} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-cyan-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(34,211,238,0.35)] [box-sizing:border-box]">
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-orange-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(251,146,60,0.35)] [box-sizing:border-box]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            stroke="#fb923c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="3 17 9 11 13 15 21 7" />
             <polyline points="15 7 21 7 21 13" />
           </svg>
           Live Chart
+        </a>
+        {/* Buy $LIL — Pink (Circulating) */}
+        <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-pink-500/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,0,122,0.35)] [box-sizing:border-box]">
+          🛒 Buy ${cfg.ticker}
         </a>
       </div>
     )
