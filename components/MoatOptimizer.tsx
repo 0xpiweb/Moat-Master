@@ -76,7 +76,9 @@ export default function MoatOptimizer() {
   const lilAmount  = parseFloat(amount)       || 0
   const avaxInput  = parseFloat(epochRewards) || 0
   const multiplier = getMultiplier(strategy, days)
-  const userPoints = (lilAmount * multiplier) / 27121
+  // 1B normalisation: Points = (adjustedTokens / 1,000,000,000) × 37,000
+  const GLOBAL_MULT = 37_000
+  const userPoints  = (lilAmount * multiplier / 1_000_000_000) * GLOBAL_MULT
   // Dilution: user's simulated points are added to the pool, so denominator grows
   const dilutedPool = poolTotal + userPoints
   const share       = userPoints > 0 ? userPoints / dilutedPool : 0
@@ -341,6 +343,11 @@ export default function MoatOptimizer() {
           {hasResult && <p className="text-xs text-zinc-500 mt-0.5">AVAX · 26 epochs</p>}
         </div>
       </div>
+
+      {/* ── Formula note ──────────────────────────────────────────── */}
+      <p className="text-[10px] text-zinc-600 text-center mt-4 leading-relaxed">
+        Points are normalized against the total $LIL supply (1B) and adjusted for current Moat density.
+      </p>
     </div>
   )
 }
