@@ -313,19 +313,19 @@ export default function RewardChecker() {
       {result && !loading && (
         <div className="flex flex-col gap-3">
 
-          {/* Row 1 — Full-width Pending Rewards ─────────────────────────────── */}
+          {/* Row 1 — Full-width Pending Rewards (centered) ───────────────────── */}
           <div
-            className="rounded-xl px-5 py-4 border"
-            style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: `rgba(${PINK_RGB},0.3)` }}
+            className="rounded-xl px-5 py-5 border text-center"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: 'rgba(34,211,238,0.25)' }}
           >
-            <span className={lbl}>Pending Rewards (Claimable)</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-white [text-shadow:none] leading-tight">
+            <span className={lbl + ' justify-center'}>Pending Rewards (Claimable)</span>
+            <div className="flex items-baseline justify-center gap-2 mt-1">
+              <span className="text-3xl font-black [text-shadow:none] leading-tight" style={{ color: '#22d3ee' }}>
                 {result.pendingAvax.toFixed(6)}
               </span>
               <span className="text-zinc-400 text-sm font-medium">AVAX</span>
             </div>
-            <p className={sub}>
+            <p className={sub + ' text-center'}>
               {result.pendingAvax > 0 ? 'Claimable on moats.app' : 'Nothing claimable yet'}
             </p>
           </div>
@@ -334,12 +334,16 @@ export default function RewardChecker() {
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
               <span className={lbl}>Your Moat Points</span>
-              <span className={val}>{fmtN(result.userPts)}</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#22d3ee' }}>
+                {fmtN(result.userPts)}
+              </span>
               <p className={sub}>Pool: {fmtN(result.totalPts)} pts</p>
             </div>
             <div className={card}>
               <span className={lbl}>Pool Share</span>
-              <span className={val}>{(result.shareRat * 100).toFixed(4)}%</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#a78bfa' }}>
+                {(result.shareRat * 100).toFixed(4)}%
+              </span>
               <p className={sub}>{fmtN(result.userPts)} / {fmtN(result.totalPts)}</p>
             </div>
             <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
@@ -347,9 +351,7 @@ export default function RewardChecker() {
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
                 {result.biWeekly.toFixed(4)}
               </span>
-              <p className={sub}>
-                ~{(result.biWeekly * 26).toFixed(2)} AVAX / yr
-              </p>
+              <p className={sub}>~{(result.biWeekly * 26).toFixed(2)} AVAX / yr</p>
             </div>
           </div>
 
@@ -357,12 +359,16 @@ export default function RewardChecker() {
           <div className="grid grid-cols-2 gap-3">
             <div className={card}>
               <span className={lbl}>Already Claimed</span>
-              <span className={val}>{result.claimedTotal.toFixed(6)}</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
+                {result.claimedTotal.toFixed(6)}
+              </span>
               <p className={sub}>{result.claimCount} claim transaction(s)</p>
             </div>
             <div className={card}>
               <span className={lbl}>Total Earned (Lifetime)</span>
-              <span className={val}>{(result.claimedTotal + result.pendingAvax).toFixed(6)}</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
+                {(result.claimedTotal + result.pendingAvax).toFixed(6)}
+              </span>
               <p className={sub}>
                 {result.claimedTotal.toFixed(6)} claimed + {result.pendingAvax.toFixed(6)} pending
               </p>
@@ -373,17 +379,23 @@ export default function RewardChecker() {
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
               <span className={lbl}>Staked</span>
-              <span className={val}>{fmtN(result.stakedAmount)}</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#22d3ee' }}>
+                {fmtN(result.stakedAmount)}
+              </span>
               <p className={sub}>LIL · 1× multiplier</p>
             </div>
             <div className={card}>
               <span className={lbl}>Locked</span>
-              <span className={val}>{fmtN(result.totalLockedUser)}</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#a78bfa' }}>
+                {fmtN(result.totalLockedUser)}
+              </span>
               <p className={sub}>LIL · {result.activeLockCount} active lock(s)</p>
             </div>
             <div className={card}>
               <span className={lbl}>Burned</span>
-              <span className={val}>{fmtN(result.totalBurnUser)}</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#f97316' }}>
+                {fmtN(result.totalBurnUser)}
+              </span>
               <p className={sub}>LIL · 10× multiplier</p>
             </div>
           </div>
