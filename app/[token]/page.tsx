@@ -512,20 +512,32 @@ export default async function TokenDashboard(
               <div className={`${legendClass} mt-0 w-1/3`}>
                 <p className={legendTitleClass}>NFT Boost</p>
                 <div className="divide-y divide-zinc-800">
-                  <div
-                    className="grid items-center gap-x-3 py-2.5 first:pt-0 last:pb-0"
-                    style={{ gridTemplateColumns: '1fr 8rem' }}
-                  >
-                    <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
-                      Lil-B 1/1 Auction
-                    </span>
-                    <span
-                      className="text-sm font-bold tabular-nums text-right whitespace-nowrap"
-                      style={{ color: '#F59E0B' }}
-                    >
-                      2%
-                    </span>
+
+                  {/* Row 1 — active · green pulse */}
+                  <div className="flex items-center justify-between gap-2 py-2.5 first:pt-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="relative flex-shrink-0 h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: '#4ade80' }} />
+                        <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#4ade80' }} />
+                      </span>
+                      <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
+                        Lil-B 1/1 Auction
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#F59E0B' }}>2%</span>
                   </div>
+
+                  {/* Row 2 — inactive · red dot */}
+                  <div className="flex items-center justify-between gap-2 py-2.5 last:pb-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0 h-2 w-2 rounded-full" style={{ backgroundColor: '#f87171' }} />
+                      <span className={`text-sm min-w-0 truncate ${cv === 'light' ? 'text-black font-bold' : 'text-zinc-300'}`}>
+                        Legendary Lil Coq
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#F59E0B' }}>3%</span>
+                  </div>
+
                 </div>
               </div>
 
