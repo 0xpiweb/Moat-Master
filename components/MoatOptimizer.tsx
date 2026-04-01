@@ -150,12 +150,12 @@ export default function MoatOptimizer() {
                 <button
                   key={s}
                   onClick={() => setStrategy(s)}
-                  className="flex-1 py-2 rounded-xl text-xs font-bold border transition-all [text-shadow:none]"
+                  className="flex-1 py-2 rounded-xl text-xs font-bold border transition-all hover:scale-105 [text-shadow:none] [box-sizing:border-box]"
                   style={strategy === s
-                    ? { backgroundColor: PINK, borderColor: PINK, color: '#fff' }
-                    : { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.12)', color: '#71717a' }}
+                    ? { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.8)', color: '#fff', boxShadow: '0 0 10px rgba(255,0,122,0.35)' }
+                    : { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.3)', color: '#fff' }}
                 >
-                  {s === 'stake' ? '🏛️ Stake' : s === 'lock' ? '🔐 Lock' : '🔥 Burn'}
+                  {s === 'stake' ? 'Stake' : s === 'lock' ? 'Lock' : 'Burn'}
                 </button>
               ))}
             </div>
