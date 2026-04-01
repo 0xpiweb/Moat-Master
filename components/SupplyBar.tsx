@@ -98,11 +98,11 @@ export default function SupplyBar({
 
   // Default dark theme with gradients
   const segments = [
-    { label: 'Circulating', value: circulating, gradient: 'linear-gradient(180deg,#ff007a 0%,#c4005e 100%)', dot: '#ff007a' },
     { label: 'Staked',      value: staked,      gradient: 'linear-gradient(180deg,#22d3ee 0%,#0e7490 100%)', dot: '#22d3ee' },
     { label: 'Locked',      value: locked,      gradient: 'linear-gradient(180deg,#a78bfa 0%,#6d28d9 100%)', dot: '#a78bfa' },
-    { label: 'Liquidity',   value: lp,          gradient: 'linear-gradient(180deg,#fb923c 0%,#c2410c 100%)', dot: '#fb923c' },
     { label: 'Burned',      value: burned,      gradient: 'linear-gradient(180deg,#f87171 0%,#b91c1c 100%)', dot: '#f87171' },
+    { label: 'Liquidity',   value: lp,          gradient: 'linear-gradient(180deg,#fb923c 0%,#c2410c 100%)', dot: '#fb923c' },
+    { label: 'Circulating', value: circulating, gradient: 'linear-gradient(180deg,#ff007a 0%,#c4005e 100%)', dot: '#ff007a' },
   ]
 
   return (
