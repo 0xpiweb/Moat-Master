@@ -155,7 +155,7 @@ export default function MoatOptimizer() {
                     ? { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.8)', color: '#fff', boxShadow: '0 0 10px rgba(255,0,122,0.35)' }
                     : { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.3)', color: '#fff' }}
                 >
-                  {s === 'stake' ? 'Stake' : s === 'lock' ? 'Lock' : 'Burn'}
+                  {s === 'stake' ? '🏛️ Stake' : s === 'lock' ? '🔐 Lock' : '🔥 Burn'}
                 </button>
               ))}
             </div>
