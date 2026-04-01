@@ -2,27 +2,34 @@
 
 import { useState } from 'react'
 import {
-  createPublicClient, http,
-  formatEther, getAddress, isAddress,
-  parseAbi, parseAbiItem,
+  createPublicClient,
+  http,
+  formatEther,
+  getAddress,
+  isAddress,
+  parseAbi,
+  parseAbiItem,
   type Address,
+  type PublicClient,
 } from 'viem'
 
-// ── Chain ──────────────────────────────────────────────────────────────────────
+// ── Avalanche chain (inline — avoids viem/chains bundle overhead) ───────────────
 const avalanche = {
   id: 43114,
-  name: 'Avalanche',
+  name: 'Avalanche C-Chain',
   nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
   rpcUrls: { default: { http: ['https://api.avax.network/ext/bc/C/rpc'] } },
-} as const
+} as const satisfies {
+  id: number
+  name: string
+  nativeCurrency: { name: string; symbol: string; decimals: number }
+  rpcUrls: { default: { http: readonly string[] } }
+}
 
 // ── Contracts ──────────────────────────────────────────────────────────────────
-const MOAT_CONTRACT = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393' as Address
-const EB_PROTO_ADDR = '0x950a98dd06c898950460b0D1FCaD75D4A23Ff373' as Address
-const EB_STAKE_ADDR = '0x2Bf32c61786b8A7b8035a029a82a23bE556DE537' as Address
-const MOAT_API      = `https://api.moats.app/api/moat-points/v2/all?contractAddress=${MOAT_CONTRACT}&chainId=43114`
-const POINTS_DIVISOR = 27_000_000_000
+const MOAT_CONTRACT    = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393' as Address
 const REWARD_POOL_AVAX = 25
+const POINTS_DIVISOR   = 27_000_000_000
 
 const MOAT_ABI = parseAbi([
   'function userInfo(address) view returns (uint256 stakedAmount, uint256 totalUserBurn, uint256 stakingPoints, uint256 burnPoints, uint256 activeLockCount)',
@@ -30,22 +37,46 @@ const MOAT_ABI = parseAbi([
   'function getAllPendingRewards(address) view returns (address[] tokens, uint256[] amounts)',
   'function getCurrentPoints(address) view returns (uint256)',
   'function totalPoints() view returns (uint256)',
-])
-
-const EB_ABI = parseAbi([
-  'function userInfo(address) view returns (uint256 stakedAmount, uint256 rewardDebt)',
-])
+] as const)
 
 const CLAIM_EVENT = parseAbiItem(
   'event RewardClaimed(address indexed user, address indexed token, uint256 amount)'
 )
 
-// ── Lock multiplier (piecewise linear, same breakpoints as MoatOptimizer) ──────
+const MOAT_API = `https://api.moats.app/api/moat-points/v2/all?contractAddress=${MOAT_CONTRACT}&chainId=43114`
+
+// ── Strict API response types ──────────────────────────────────────────────────
+interface MoatLeaderboardEntry { address?: string; points?: number }
+interface MoatApiResponse { leaderboard?: MoatLeaderboardEntry[] }
+
+// ── Strict on-chain return types ───────────────────────────────────────────────
+interface UserInfoReturn {
+  stakedAmount:   bigint
+  totalUserBurn:  bigint
+  stakingPoints:  bigint
+  burnPoints:     bigint
+  activeLockCount: bigint
+}
+interface LocksReturn {
+  amounts:           readonly bigint[]
+  ends:              readonly bigint[]
+  points:            readonly bigint[]
+  originalDurations: readonly bigint[]
+  lastUpdated:       readonly bigint[]
+  active:            readonly boolean[]
+}
+interface PendingReturn {
+  tokens:  readonly Address[]
+  amounts: readonly bigint[]
+}
+
+// ── Lock multiplier (piecewise linear — same breakpoints as MoatOptimizer) ─────
 const LOCK_POINTS = [
-  { days: 1, mult: 2.04 }, { days: 7,   mult: 2.11 }, { days: 30,  mult: 2.31 },
-  { days: 90, mult: 2.73 }, { days: 180, mult: 3.23 }, { days: 365, mult: 4.00 },
+  { days: 1,   mult: 2.04 }, { days: 7,   mult: 2.11 }, { days: 30,  mult: 2.31 },
+  { days: 90,  mult: 2.73 }, { days: 180, mult: 3.23 }, { days: 365, mult: 4.00 },
   { days: 730, mult: 5.00 },
-]
+] as const
+
 function getLockMultiplier(days: number): number {
   if (days <= 1)   return LOCK_POINTS[0].mult
   if (days >= 730) return LOCK_POINTS[LOCK_POINTS.length - 1].mult
@@ -59,22 +90,30 @@ function getLockMultiplier(days: number): number {
   return 2.0
 }
 
-// ── Format helpers ─────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function fmtE(v: bigint): number { return Number(formatEther(v)) }
 function fmtN(n: number, d = 0): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })
 }
-function fmtE(v: bigint): number { return Number(formatEther(v)) }
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-interface Lock { amount: number; endTs: number; durDays: number; active: boolean }
-interface Result {
-  pendingAvax: number; userPts: number; totalPts: number; shareRat: number
-  biWeekly: number; claimedTotal: number; claimCount: number
-  stakedAmount: number; totalLockedUser: number; activeLockCount: number
-  totalBurnUser: number; locks: Lock[]
+// ── Result type ────────────────────────────────────────────────────────────────
+interface LockItem   { amount: number; endTs: number; durDays: number; active: boolean }
+interface CheckResult {
+  pendingAvax:     number
+  userPts:         number
+  totalPts:        number
+  shareRat:        number
+  biWeekly:        number
+  claimedTotal:    number
+  claimCount:      number
+  stakedAmount:    number
+  totalLockedUser: number
+  activeLockCount: number
+  totalBurnUser:   number
+  locks:           LockItem[]
 }
 
-// ── Theme ──────────────────────────────────────────────────────────────────────
+// ── Theme constants ────────────────────────────────────────────────────────────
 const PINK     = '#ff007a'
 const PINK_RGB = '255,0,122'
 
@@ -83,7 +122,7 @@ export default function RewardChecker() {
   const [addr,    setAddr]    = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
-  const [result,  setResult]  = useState<Result | null>(null)
+  const [result,  setResult]  = useState<CheckResult | null>(null)
 
   async function lookup() {
     const raw = addr.trim()
@@ -91,99 +130,138 @@ export default function RewardChecker() {
       setError('Please enter a valid Avalanche address (0x…)')
       return
     }
-    setLoading(true); setError(null); setResult(null)
+    setLoading(true)
+    setError(null)
+    setResult(null)
 
     try {
       const address = getAddress(raw)
-      const client  = createPublicClient({ chain: avalanche, transport: http() })
 
-      const [userInf, locks, pending, onchainPts, onchainTotal, moatApi] = await Promise.all([
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',           args: [address] }),
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',    args: [address] }),
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards',args: [address] }),
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getCurrentPoints',   args: [address] }),
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',        args: [] }),
-        fetch(MOAT_API).then(r => r.ok ? r.json() : null).catch(() => null),
-      ])
+      const client: PublicClient = createPublicClient({
+        chain:     avalanche,
+        transport: http('https://api.avax.network/ext/bc/C/rpc'),
+      })
 
-      // Claim history — best-effort (public RPC may limit block range)
-      const claimLogs = await client.getLogs({
-        address: MOAT_CONTRACT,
-        event:   CLAIM_EVENT,
-        args:    { user: address },
-        fromBlock: 0n,
-      }).catch(() => [])
+      // ── Parallel on-chain + API fetch ──────────────────────────────────────
+      const [rawUserInfo, rawLocks, rawPending, rawCurPts, rawTotalPts, moatApiRaw] =
+        await Promise.all([
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',            args: [address] }),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',     args: [address] }),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards', args: [address] }),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getCurrentPoints',    args: [address] }),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',         args: [] }),
+          fetch(MOAT_API)
+            .then((r): Promise<MoatApiResponse | null> => r.ok ? r.json() as Promise<MoatApiResponse> : Promise.resolve(null))
+            .catch((): MoatApiResponse | null => null),
+        ])
 
-      // ── Staked / Burned / Lock count
-      const [stakedRaw, burnRaw,,,activeLockCountRaw] = userInf as [bigint,bigint,bigint,bigint,bigint]
-      const stakedAmount    = fmtE(stakedRaw)
-      const totalBurnUser   = fmtE(burnRaw)
-      const activeLockCount = Number(activeLockCountRaw)
+      // ── Claim history — best-effort (public RPC block range may be limited) ─
+      const claimLogs = await client
+        .getLogs({
+          address:   MOAT_CONTRACT,
+          event:     CLAIM_EVENT,
+          args:      { user: address },
+          fromBlock: 0n,
+        })
+        .catch((): [] => [])
 
-      // ── Locks
-      const { amounts, ends, originalDurations, active: actives } = locks as {
-        amounts: bigint[]; ends: bigint[]; originalDurations: bigint[]; active: boolean[]
-      }
-      const userLocks: Lock[] = []
+      // ── Cast to strict types ───────────────────────────────────────────────
+      const userInfo = rawUserInfo  as unknown as UserInfoReturn
+      const locks    = rawLocks     as unknown as LocksReturn
+      const pending  = rawPending   as unknown as PendingReturn
+      const curPts   = rawCurPts    as bigint
+      const totalPts = rawTotalPts  as bigint
+      const moatApi  = moatApiRaw   as MoatApiResponse | null
+
+      // ── Staked / Burned / Lock count ───────────────────────────────────────
+      const stakedAmount    = fmtE(userInfo.stakedAmount)
+      const totalBurnUser   = fmtE(userInfo.totalUserBurn)
+      const activeLockCount = Number(userInfo.activeLockCount)
+
+      // ── Parse locks ────────────────────────────────────────────────────────
+      const lockItems: LockItem[] = []
       let totalLockedUser = 0
-      for (let i = 0; i < amounts.length; i++) {
-        const amt = fmtE(amounts[i])
+      for (let i = 0; i < locks.amounts.length; i++) {
+        const amt = fmtE(locks.amounts[i])
         if (amt <= 0) continue
-        const endTs   = Number(ends[i])
-        const durDays = Math.round(Number(originalDurations[i]) / 86400)
-        if (actives[i]) totalLockedUser += amt
-        userLocks.push({ amount: amt, endTs, durDays, active: actives[i] })
+        const endTs   = Number(locks.ends[i])
+        const durDays = Math.round(Number(locks.originalDurations[i]) / 86400)
+        if (locks.active[i]) totalLockedUser += amt
+        lockItems.push({ amount: amt, endTs, durDays, active: locks.active[i] })
       }
 
-      // ── Pending
-      const { amounts: pendAmts } = pending as { tokens: Address[]; amounts: bigint[] }
-      const pendingAvax = pendAmts.reduce((s, a) => s + fmtE(a), 0)
+      // ── Pending rewards ────────────────────────────────────────────────────
+      const pendingAvax = Array.from(pending.amounts).reduce((s, a) => s + fmtE(a), 0)
 
-      // ── Claimed
+      // ── Claimed history (best-effort) ──────────────────────────────────────
       const claimedTotal = claimLogs.reduce((s, log) => {
-        const args = log.args as { amount?: bigint }
-        return s + fmtE(args.amount ?? 0n)
+        const amount = (log.args as { amount?: bigint }).amount ?? 0n
+        return s + fmtE(amount)
       }, 0)
       const claimCount = claimLogs.length
 
-      // ── Points — API primary, on-chain fallback
-      let userPts = 0, totalPts = 0, shareRat = 0
-      const addrLower = address.toLowerCase()
-      if (moatApi?.leaderboard?.length > 0) {
-        const lb = moatApi.leaderboard as { address?: string; points?: number }[]
-        totalPts = lb.reduce((s: number, e) => s + (e.points ?? 0), 0)
-        const entry = lb.find((e) => e.address?.toLowerCase() === addrLower)
-        userPts  = entry?.points ?? 0
-        shareRat = totalPts > 0 ? userPts / totalPts : 0
+      // ── Points: Moat API primary, on-chain fallback ────────────────────────
+      let userPtsDisplay  = 0
+      let totalPtsDisplay = 0
+      let shareRat        = 0
+      const addrLower     = address.toLowerCase()
+
+      if (moatApi?.leaderboard && moatApi.leaderboard.length > 0) {
+        totalPtsDisplay = moatApi.leaderboard.reduce(
+          (s: number, e: MoatLeaderboardEntry) => s + (e.points ?? 0), 0
+        )
+        const entry = moatApi.leaderboard.find(
+          (e: MoatLeaderboardEntry) => e.address?.toLowerCase() === addrLower
+        )
+        userPtsDisplay = entry?.points ?? 0
+        shareRat = totalPtsDisplay > 0 ? userPtsDisplay / totalPtsDisplay : 0
       } else {
-        userPts   = Number(onchainPts as bigint)  / POINTS_DIVISOR
-        totalPts  = Number(onchainTotal as bigint) / POINTS_DIVISOR
-        shareRat  = Number(onchainTotal as bigint) > 0 ? Number(onchainPts as bigint) / Number(onchainTotal as bigint) : 0
+        const curRaw   = Number(curPts)
+        const totalRaw = Number(totalPts)
+        userPtsDisplay  = curRaw   / POINTS_DIVISOR
+        totalPtsDisplay = totalRaw / POINTS_DIVISOR
+        shareRat        = totalRaw > 0 ? curRaw / totalRaw : 0
       }
 
       const biWeekly = shareRat * REWARD_POOL_AVAX
 
-      setResult({ pendingAvax, userPts, totalPts, shareRat, biWeekly, claimedTotal, claimCount,
-        stakedAmount, totalLockedUser, activeLockCount, totalBurnUser, locks: userLocks })
+      setResult({
+        pendingAvax,
+        userPts:         userPtsDisplay,
+        totalPts:        totalPtsDisplay,
+        shareRat,
+        biWeekly,
+        claimedTotal,
+        claimCount,
+        stakedAmount,
+        totalLockedUser,
+        activeLockCount,
+        totalBurnUser,
+        locks:           lockItems,
+      })
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data. Check the address and try again.')
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to fetch on-chain data. Check the address and try again.'
+      )
     } finally {
       setLoading(false)
     }
   }
 
-  // ── Shared card styles (glassmorphism, matching MoatOptimizer) ───────────────
-  const card  = 'bg-black/40 border border-zinc-800 rounded-xl p-4'
-  const lbl   = 'text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5'
-  const val   = 'text-lg font-black text-white [text-shadow:none]'
-  const sub   = 'text-[10px] text-zinc-600 mt-0.5'
+  // ── Shared style constants ─────────────────────────────────────────────────
+  const card = 'bg-black/40 border border-zinc-800 rounded-xl p-4'
+  const lbl  = 'text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5'
+  const val  = 'text-lg font-black text-white [text-shadow:none]'
+  const sub  = 'text-[10px] text-zinc-600 mt-0.5'
 
   return (
     <div
       className="border rounded-2xl p-6 backdrop-blur-xl bg-zinc-900/50"
       style={{ borderColor: `rgba(${PINK_RGB},0.45)`, boxShadow: `0 0 28px rgba(${PINK_RGB},0.07)` }}
     >
-      {/* ── Header: title + search ───────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <p className="text-[10px] font-bold uppercase tracking-widest flex-shrink-0" style={{ color: PINK }}>
           Reward Checker
@@ -194,7 +272,7 @@ export default function RewardChecker() {
             placeholder="Search by Avalanche address (0x…)"
             value={addr}
             onChange={e => setAddr(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !loading && lookup()}
+            onKeyDown={e => { if (e.key === 'Enter' && !loading) lookup() }}
             className="flex-1 bg-black/60 border border-zinc-700 rounded-xl px-4 py-2 text-white text-xs font-semibold outline-none transition-colors focus:border-[#ff007a] [text-shadow:none]"
           />
           <button
@@ -208,21 +286,21 @@ export default function RewardChecker() {
         </div>
       </div>
 
-      {/* ── Error ────────────────────────────────────────────────────────── */}
+      {/* ── Error ──────────────────────────────────────────────────────────── */}
       {error && <p className="text-red-400 text-xs mb-5">❌ {error}</p>}
 
-      {/* ── Loading ──────────────────────────────────────────────────────── */}
+      {/* ── Loading ────────────────────────────────────────────────────────── */}
       {loading && (
         <div className="flex items-center justify-center py-14">
           <span className="text-zinc-500 text-sm">Fetching on-chain data…</span>
         </div>
       )}
 
-      {/* ── Results ──────────────────────────────────────────────────────── */}
+      {/* ── Results ────────────────────────────────────────────────────────── */}
       {result && !loading && (
         <div className="flex flex-col gap-4">
 
-          {/* 6 stat cards — 3 × 2 grid */}
+          {/* Row 1 — 6 stat cards, 3 per row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
 
             <div className={card}>
@@ -245,7 +323,7 @@ export default function RewardChecker() {
               <p className={sub}>{fmtN(result.userPts)} / {fmtN(result.totalPts)} pts</p>
             </div>
 
-            {/* Bi-weekly — highlighted with pink accent */}
+            {/* Est. Bi-Weekly — pink accent border + value */}
             <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
               <span className={lbl}>Est. Bi-Weekly Rewards</span>
               <span className="text-lg font-black [text-shadow:none]" style={{ color: PINK }}>
@@ -265,11 +343,13 @@ export default function RewardChecker() {
             <div className={card}>
               <span className={lbl}>Total Earned (Lifetime)</span>
               <span className={val}>{(result.claimedTotal + result.pendingAvax).toFixed(6)}</span>
-              <p className={sub}>{result.claimedTotal.toFixed(6)} claimed + {result.pendingAvax.toFixed(6)} pending</p>
+              <p className={sub}>
+                {result.claimedTotal.toFixed(6)} claimed + {result.pendingAvax.toFixed(6)} pending
+              </p>
             </div>
           </div>
 
-          {/* 3 Moat Position cards */}
+          {/* Row 2 — 3 Moat Position cards */}
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
               <span className={lbl}>Staked</span>
@@ -288,17 +368,21 @@ export default function RewardChecker() {
             </div>
           </div>
 
-          {/* Active Locks list */}
+          {/* Row 3 — Active Locks list (conditional) */}
           {result.locks.length > 0 && (
             <div className={card}>
               <p className={lbl + ' mb-3'}>Active Locks</p>
               <div className="flex flex-col divide-y divide-zinc-800">
                 {result.locks.map((lk, i) => {
-                  const endDate   = new Date(lk.endTs * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                  const isExpired = lk.endTs < Date.now() / 1000
-                  const isActive  = lk.active && !isExpired
-                  const durLabel  = lk.durDays >= 365 ? `${(lk.durDays / 365).toFixed(1)} yr` : `${lk.durDays} days`
-                  const mult      = getLockMultiplier(lk.durDays)
+                  const endDate  = new Date(lk.endTs * 1000).toLocaleDateString('en-GB', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                  })
+                  const expired  = lk.endTs < Date.now() / 1000
+                  const isActive = lk.active && !expired
+                  const dur      = lk.durDays >= 365
+                    ? `${(lk.durDays / 365).toFixed(1)} yr`
+                    : `${lk.durDays} days`
+                  const mult = getLockMultiplier(lk.durDays)
 
                   return (
                     <div key={i} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
@@ -307,15 +391,14 @@ export default function RewardChecker() {
                           {fmtN(lk.amount)} LIL
                         </p>
                         <p className="text-xs text-zinc-500">
-                          {durLabel} lock · {mult.toFixed(2)}× multiplier · Ends {endDate}
+                          {dur} lock · {mult.toFixed(2)}× multiplier · Ends {endDate}
                         </p>
                       </div>
                       <span
                         className="text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0"
                         style={isActive
                           ? { backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }
-                          : { backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }
-                        }
+                          : { backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}
                       >
                         {isActive ? 'Active' : 'Unlockable'}
                       </span>
