@@ -91,7 +91,10 @@ function getLockMultiplier(days: number): number {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function fmtE(v: bigint): number { return Number(formatEther(v)) }
+function fmtE(v: bigint | undefined | null): number {
+  if (v == null) return 0
+  return Number(formatEther(v))
+}
 function fmtN(n: number, d = 0): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })
 }
@@ -145,11 +148,11 @@ export default function RewardChecker() {
       // ── Parallel on-chain + API fetch ──────────────────────────────────────
       const [rawUserInfo, rawLocks, rawPending, rawCurPts, rawTotalPts, moatApiRaw] =
         await Promise.all([
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',            args: [address] }),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',     args: [address] }),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards', args: [address] }),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getCurrentPoints',    args: [address] }),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',         args: [] }),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',            args: [address] }).catch(() => null),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',     args: [address] }).catch(() => null),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards', args: [address] }).catch(() => null),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getCurrentPoints',    args: [address] }).catch(() => null),
+          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',         args: [] }).catch(() => null),
           fetch(MOAT_API)
             .then((r): Promise<MoatApiResponse | null> => r.ok ? r.json() as Promise<MoatApiResponse> : Promise.resolve(null))
             .catch((): MoatApiResponse | null => null),
@@ -165,12 +168,16 @@ export default function RewardChecker() {
         })
         .catch((): [] => [])
 
-      // ── Cast to strict types ───────────────────────────────────────────────
-      const userInfo = rawUserInfo  as unknown as UserInfoReturn
-      const locks    = rawLocks     as unknown as LocksReturn
-      const pending  = rawPending   as unknown as PendingReturn
-      const curPts   = rawCurPts    as bigint
-      const totalPts = rawTotalPts  as bigint
+      // ── Cast to strict types (with null-safe defaults) ────────────────────
+      const EMPTY_USER: UserInfoReturn = { stakedAmount: 0n, totalUserBurn: 0n, stakingPoints: 0n, burnPoints: 0n, activeLockCount: 0n }
+      const EMPTY_LOCKS: LocksReturn   = { amounts: [], ends: [], points: [], originalDurations: [], lastUpdated: [], active: [] }
+      const EMPTY_PEND: PendingReturn  = { tokens: [], amounts: [] }
+
+      const userInfo = (rawUserInfo as unknown as UserInfoReturn | null) ?? EMPTY_USER
+      const locks    = (rawLocks    as unknown as LocksReturn    | null) ?? EMPTY_LOCKS
+      const pending  = (rawPending  as unknown as PendingReturn  | null) ?? EMPTY_PEND
+      const curPts   = (rawCurPts   as bigint | null)  ?? 0n
+      const totalPts = (rawTotalPts as bigint | null)  ?? 0n
       const moatApi  = moatApiRaw   as MoatApiResponse | null
 
       // ── Staked / Burned / Lock count ───────────────────────────────────────
