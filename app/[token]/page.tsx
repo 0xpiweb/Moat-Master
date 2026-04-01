@@ -533,7 +533,7 @@ export default async function TokenDashboard(
 
           {/* Community Tool sections */}
           {theme?.communityTools?.some(t => t.id === 'calculator') && (
-            <div id="calculator" className="mt-4">
+            <div id="calculator" className="mt-8">
               <MoatOptimizer />
             </div>
           )}
