@@ -236,35 +236,36 @@ export default async function TokenDashboard(
     ) : (
       // Default
       <div className="flex flex-wrap justify-center gap-2 py-6">
-        <a href={cfg.urls.buy}      target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors [box-sizing:border-box] will-change-transform [transform:translateZ(0)]"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(0,255,65,0.4)', color: '#00FF41' }}>
+        {/* Buy — Pink */}
+        <a href={cfg.urls.buy} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-pink-500/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,0,122,0.35)] [box-sizing:border-box]">
           🛒 Buy ${cfg.ticker}
         </a>
-        <a href={cfg.urls.moat}     target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors bg-blue-950 border-blue-700 text-blue-300 hover:bg-blue-900 [box-sizing:border-box]">
+        {/* Stake — Cyan */}
+        <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-cyan-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(34,211,238,0.35)] [box-sizing:border-box]">
           🏰 Stake
         </a>
-        <a href={cfg.urls.moat}     target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors bg-violet-950 border-violet-700 text-violet-300 hover:bg-violet-900 [box-sizing:border-box]">
+        {/* Lock — Purple */}
+        <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-violet-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(167,139,250,0.35)] [box-sizing:border-box]">
           🔐 Lock
         </a>
-        <a href={cfg.urls.moat}     target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors bg-red-950 border-red-800 text-red-300 hover:bg-red-900 [box-sizing:border-box]">
+        {/* Burn — Red */}
+        <a href={cfg.urls.moat} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-red-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(248,113,113,0.35)] [box-sizing:border-box]">
           🔥 Burn
         </a>
-        <a href={cfg.urls.burn}     target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors bg-red-950 border-red-800 text-red-300 hover:bg-red-900 [box-sizing:border-box]">
+        {/* View Total Burn — Orange */}
+        <a href={cfg.urls.burn} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-orange-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(251,146,60,0.35)] [box-sizing:border-box]">
           💀 View Total Burn
         </a>
+        {/* Live Chart — Cyan */}
         <a href={cfg.urls.dexChart} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium border transition-colors [box-sizing:border-box] will-change-transform [transform:translateZ(0)]"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(0,255,65,0.4)', color: '#00FF41' }}>
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="#00FF41" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            aria-hidden="true"
-          >
+          className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium text-white border border-cyan-400/50 bg-black/50 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(34,211,238,0.35)] [box-sizing:border-box]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="3 17 9 11 13 15 21 7" />
             <polyline points="15 7 21 7 21 13" />
           </svg>
