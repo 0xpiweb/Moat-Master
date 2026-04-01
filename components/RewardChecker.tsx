@@ -326,7 +326,7 @@ export default function RewardChecker() {
                 {result.pendingAvax.toFixed(6)}
               </span>
               <div className="flex items-center gap-3 pl-5">
-                <span className="text-zinc-400 text-sm font-medium leading-none">AVAX</span>
+                <span className="text-zinc-400 text-sm font-medium leading-none">$AVAX</span>
                 <a
                   href={`https://moats.app/moat/${MOAT_CONTRACT.toLowerCase()}`}
                   target="_blank"
@@ -366,7 +366,7 @@ export default function RewardChecker() {
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
                 {result.biWeekly.toFixed(4)}
               </span>
-              <p className={sub}>~{(result.biWeekly * 26).toFixed(2)} AVAX / yr</p>
+              <p className={sub}>~{(result.biWeekly * 26).toFixed(2)} $AVAX / yr</p>
             </div>
           </div>
 
@@ -374,7 +374,7 @@ export default function RewardChecker() {
           <div className="grid grid-cols-2 gap-3">
             <div className={card}>
               <span className={lbl}>Already Claimed</span>
-              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
+              <span className="text-xl font-black leading-tight [text-shadow:none] text-white">
                 {result.claimedTotal.toFixed(6)}
               </span>
               <p className={sub}>{result.claimCount} claim transaction(s)</p>
