@@ -252,7 +252,7 @@ export default function MoatOptimizer() {
 
       <div className="border-t border-zinc-800 mb-5" />
 
-      {/* ── Results Row: Moat Points + Earning Power ─────────────────────── */}
+      {/* ── Primary Results: Moat Points + Daily Projected ───────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
         {/* Moat Points — display only */}
@@ -275,47 +275,34 @@ export default function MoatOptimizer() {
           </p>
         </div>
 
-        {/* Earning Power — reward weight */}
+        {/* Daily Projected — hero yield card */}
         <div
-          className="border rounded-xl p-4"
-          style={{ backgroundColor: `rgba(${PINK_RGB},0.07)`, borderColor: `rgba(${PINK_RGB},0.35)` }}
+          className="border rounded-xl p-4 flex flex-col justify-between"
+          style={{ backgroundColor: 'rgba(34,211,238,0.06)', borderColor: 'rgba(34,211,238,0.35)', boxShadow: hasResult ? '0 0 20px rgba(34,211,238,0.08)' : undefined }}
         >
           <div className="flex items-center gap-1.5 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PINK }} />
-            <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: PINK }}>
-              Earning Power
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-cyan-400">
+              Daily Projected
             </span>
           </div>
-          <span className="text-3xl font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.02em' }}>
-            {hasResult ? fmt(userEarningPower) : '—'}
-          </span>
-          {hasResult && (
-            <p className="text-[10px] text-zinc-600 mt-1.5">
-              {multiplier.toFixed(2)}× · {(pulseShare * 100).toFixed(4)}% of {fmt(GLOBAL_REWARD_POWER)} reward pool
-            </p>
-          )}
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span
+                className="text-3xl font-black [text-shadow:none]"
+                style={{ letterSpacing: '-0.02em', color: '#22d3ee' }}
+              >
+                ~{hasResult ? dailyProjected.toFixed(4) : '—'}
+              </span>
+              {hasResult && <span className="text-zinc-400 text-base font-medium">$AVAX</span>}
+            </div>
+            {hasResult && (
+              <p className="text-[10px] text-zinc-600 mt-1.5">
+                {projectedPulse.toFixed(4)} per pulse · {PULSES_PER_DAY}× daily · {(pulseShare * 100).toFixed(4)}% pool share
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* ── Daily Pulse Highlight ─────────────────────────────────────────── */}
-      <div
-        className="border rounded-xl p-5 mb-4 text-center"
-        style={{ backgroundColor: `rgba(${PINK_RGB},0.07)`, borderColor: `rgba(${PINK_RGB},0.35)` }}
-      >
-        <span className="text-[10px] font-semibold uppercase tracking-widest block mb-2" style={{ color: PINK }}>
-          Daily Projected
-        </span>
-        <div className="flex items-baseline justify-center gap-2">
-          <span className="text-4xl font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.02em' }}>
-            ~{hasResult ? dailyProjected.toFixed(4) : '—'}
-          </span>
-          {hasResult && <span className="text-zinc-400 text-lg font-medium">$AVAX</span>}
-        </div>
-        {hasResult && (
-          <p className="text-xs text-zinc-500 mt-1.5">
-            {projectedPulse.toFixed(4)} $AVAX per pulse · {PULSES_PER_DAY} pulses / day · {PULSE_AVAX} $AVAX each
-          </p>
-        )}
       </div>
 
       {/* ── Monthly + Yearly ──────────────────────────────────────────────── */}
