@@ -371,12 +371,12 @@ export default function RewardChecker() {
               </span>
             </div>
             {/* Right — next payout */}
-            <div className="flex flex-col items-end flex-shrink-0">
-              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mb-0.5">Next Payout</span>
-              <span className="text-sm font-black [text-shadow:none] text-white leading-none">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest">Next Payout</span>
+              <span className="text-sm font-black [text-shadow:none] text-white">
                 In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
               </span>
-              <span className="text-[10px] text-zinc-600 mt-0.5">{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
+              <span className="text-[10px] text-zinc-600">· {(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
             </div>
           </div>
 
