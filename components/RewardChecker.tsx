@@ -261,10 +261,10 @@ export default function RewardChecker() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div className="flex-shrink-0">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: PINK }}>
-            Reward Auditor
+            Reward Checker
           </p>
           <p className="text-[10px] text-zinc-600 mt-0.5">
-            Timeline-based · Phase 1 → Transition → Fixed Pulse
+            Timeline-based · Mar 30 → Apr 12
           </p>
         </div>
         <div className="flex gap-2 w-full sm:max-w-lg">
@@ -291,11 +291,11 @@ export default function RewardChecker() {
       <div className="mb-5">
         <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: epochBarFill }} />
         <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-zinc-600">Mar 31</span>
+          <span className="text-[10px] text-zinc-600">Mar 30</span>
           <span className="text-[10px] text-zinc-500">
             {countdown.daysLeft > 0 ? `${countdown.daysLeft} day${countdown.daysLeft !== 1 ? 's' : ''} remaining` : 'Epoch complete'}
           </span>
-          <span className="text-[10px] text-zinc-600">Apr 13</span>
+          <span className="text-[10px] text-zinc-600">Apr 12</span>
         </div>
       </div>
 
