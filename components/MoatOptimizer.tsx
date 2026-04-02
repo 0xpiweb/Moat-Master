@@ -42,13 +42,12 @@ function fmt(n: number): string {
 
 const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
-// ── Tier 1: Display Points (time-weighted — matches Moat App UI) ─────────────
-// <10M:  (tokens × 1.1 + tokens × (days/365) × 4.545) / 1,000
-// ≥10M:  (tokens / 1B) × 370,000  (whale cap)
-const DISPLAY_THRESHOLD = 10_000_000      // Token count breakpoint
-const DISPLAY_SCALE     = 370_000         // ≥10M formula scale
-const NORMALIZATION_CAP = 1_000_000_000   // $LIL total supply
-const DISPLAY_NORM      = 1_000           // <10M normalization divisor
+// ── Tier 1: Display Points (tiered normalization — matches Moat App UI) ──────
+// <40M:  tokens / 2,100   (e.g. 20M → ~9,524 pts · 32M → ~15,238 pts)
+// ≥40M:  tokens / 2,700   (e.g. 54M → ~20,000 pts)
+const DISPLAY_THRESHOLD  = 40_000_000   // Token count breakpoint
+const DISPLAY_DIVISOR_LO = 2_100        // <40M divisor
+const DISPLAY_DIVISOR_HI = 2_700        // ≥40M divisor
 
 // ── Tier 2: Earning Power (fixed-pulse era from 3/31) ─────────────────────────
 const GLOBAL_EARNING_POWER = 3_942_855_424   // Staked×1 + Locked×3.76avg + Burned×10
@@ -72,12 +71,10 @@ export default function MoatOptimizer() {
   const lilAmount  = parseFloat(amount) || 0
   const multiplier = getMultiplier(strategy, days)
 
-  // Tier 1 — Display Points: two-tier, no earning power multiplier
-  // effectiveDays = 0 for stake/burn (no lock duration)
-  const effectiveDays   = strategy === 'lock' ? days : 0
+  // Tier 1 — Display Points: tiered divisor, no earning power multiplier
   const displayedPoints = lilAmount >= DISPLAY_THRESHOLD
-    ? (lilAmount / NORMALIZATION_CAP) * DISPLAY_SCALE
-    : (lilAmount * 1.1 + lilAmount * (effectiveDays / 365) * 4.545) / DISPLAY_NORM
+    ? lilAmount / DISPLAY_DIVISOR_HI
+    : lilAmount / DISPLAY_DIVISOR_LO
 
   // Tier 2 — Earning Power: multipliers applied, drives pulse share
   const staked = strategy === 'stake' ? lilAmount : 0
@@ -262,10 +259,8 @@ export default function MoatOptimizer() {
           <p className="text-[10px] text-zinc-600 mt-1.5">
             {hasResult
               ? lilAmount >= DISPLAY_THRESHOLD
-                ? '≥10M · (tokens / 1B) × 370,000'
-                : effectiveDays > 0
-                ? `<10M time-weighted · ${(effectiveDays / 365 * 4.545).toFixed(3)}× duration bonus`
-                : '<10M · tokens × 1.1 / 1,000'
+                ? '≥40M · tokens ÷ 2,700'
+                : '<40M · tokens ÷ 2,100'
               : 'As displayed in the Moat App · multipliers not applied'}
           </p>
         </div>
