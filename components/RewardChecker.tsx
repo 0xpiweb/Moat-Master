@@ -319,7 +319,7 @@ export default function RewardChecker() {
               <span className="text-2xl font-black leading-tight [text-shadow:none] mt-1" style={{ color: '#4ade80' }}>
                 {result.userTotalEarned.toFixed(6)}
               </span>
-              <p className={sub}>$AVAX · Phase 1 + Transition + Phase 2</p>
+              <p className={sub}>$AVAX</p>
             </div>
 
             {/* CENTER HERO — Your Unclaimed Balance (live contract) */}
@@ -349,14 +349,7 @@ export default function RewardChecker() {
               <span className="text-2xl font-black leading-tight [text-shadow:none] text-white mt-1">
                 {result.alreadyWithdrawn.toFixed(6)}
               </span>
-              <p className={sub}>$AVAX · Est. accrued − live pending</p>
-              <a
-                href={`https://snowtrace.io/txsInternal?a=${checkedAddress}&tadd=${REWARD_ADDRESS}`}
-                target="_blank" rel="noopener noreferrer"
-                className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors mt-1 inline-block"
-              >
-                View on Snowtrace ↗
-              </a>
+              <p className={sub}>$AVAX</p>
             </div>
           </div>
 
