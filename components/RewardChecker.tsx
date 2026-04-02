@@ -13,7 +13,7 @@ import {
   type PublicClient,
 } from 'viem'
 
-// ── Avalanche chain (inline — avoids viem/chains bundle overhead) ───────────────
+// ── Avalanche chain ────────────────────────────────────────────────────────────
 const avalanche = {
   id: 43114,
   name: 'Avalanche C-Chain',
@@ -28,51 +28,51 @@ const avalanche = {
 
 // ── Contracts ──────────────────────────────────────────────────────────────────
 const MOAT_CONTRACT  = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393' as Address
-const POINTS_DIVISOR = 27_000_000_000
+const REWARD_ADDRESS = '0x5E1AC781157AAF1492f15c351183EEFCa5Fbd746' as Address
 
-// ── Distribution constants ─────────────────────────────────────────────────────
-// Legacy era (3/16 – 3/30): 7.148% of pool; final payout 2.945 AVAX on 3/30
-const PROGRAM_START_TS  = Math.floor(new Date('2026-03-16T00:00:00Z').getTime() / 1000)
+// ── Distribution timeline ──────────────────────────────────────────────────────
+const PROGRAM_START_TS   = Math.floor(new Date('2026-03-16T00:00:00Z').getTime() / 1000)
 const FIXED_ERA_START_TS = Math.floor(new Date('2026-03-31T00:00:00Z').getTime() / 1000)
-// Fixed-interval era (3/31+): pool / (14d × 4 pulses) per pulse
-const PULSES_PER_DAY       = 4
-const PAYOUT_INTERVAL_S    = 6 * 3600
-const EPOCH_POOL_AVAX      = 30.41          // WAVAX in pool (reloads 4/13)
-const EPOCH_DAYS           = 14             // Epoch length in days
-const EPOCH_DURATION_S     = EPOCH_DAYS * 86400
-const PULSE_AVAX           = 0.577             // Fixed AVAX per pulse (post-3/31 era)
-const GLOBAL_REWARD_POWER  = 3_942_855_424     // Staked×1 + Locked×avg + Burned×10
+const PULSES_PER_DAY     = 4
+const PAYOUT_INTERVAL_S  = 6 * 3600
+const PULSE_AVAX         = 0.577
+
+// Phase 1 (Mar 16–29): 14 days, 7.148% diminishing daily from 30.6 AVAX
+const LEGACY_ERA_RATE       = 0.07148
+const LEGACY_INJECTION_AVAX = 30.6
+const PHASE1_TOTAL = LEGACY_INJECTION_AVAX * (1 - Math.pow(1 - LEGACY_ERA_RATE, 14))
+
+// Transition (Mar 30): 30.41 AVAX loaded, 7.148% released
+const TRANSITION_TOTAL = 30.41 * LEGACY_ERA_RATE
+
+// Global reward power anchor
+const GLOBAL_REWARD_POWER = 3_942_855_424
+
 // Ecosystem snapshot
-const TOTAL_SUPPLY   = 1_350_000_000
-const GLOBAL_STAKED  =   155_693_804
-const GLOBAL_LOCKED  =   152_330_218
-const GLOBAL_BURNED  =   321_438_924
-const MOAT_DENSITY   = ((GLOBAL_STAKED + GLOBAL_LOCKED + GLOBAL_BURNED) / TOTAL_SUPPLY * 100).toFixed(2)
+const TOTAL_SUPPLY  = 1_350_000_000
+const GLOBAL_STAKED =   155_693_804
+const GLOBAL_LOCKED =   152_330_218
+const GLOBAL_BURNED =   321_438_924
+const MOAT_DENSITY  = ((GLOBAL_STAKED + GLOBAL_LOCKED + GLOBAL_BURNED) / TOTAL_SUPPLY * 100).toFixed(2)
+
+// ── Phase 2 elapsed AVAX (computed at runtime) ─────────────────────────────────
+function getPhase2ElapsedAvax(): number {
+  const now     = Math.floor(Date.now() / 1000)
+  const elapsed = Math.max(0, now - FIXED_ERA_START_TS)
+  const pulses  = Math.floor(elapsed / PAYOUT_INTERVAL_S)
+  return pulses * PULSE_AVAX
+}
 
 const MOAT_ABI = parseAbi([
   'function userInfo(address) view returns (uint256 stakedAmount, uint256 totalUserBurn, uint256 stakingPoints, uint256 burnPoints, uint256 activeLockCount)',
   'function getUserAllLocks(address) view returns (uint256[] amounts, uint256[] ends, uint256[] points, uint256[] originalDurations, uint256[] lastUpdated, bool[] active)',
-  'function getAllPendingRewards(address) view returns (address[] tokens, uint256[] amounts)',
-  'function getCurrentPoints(address) view returns (uint256)',
-  'function totalPoints() view returns (uint256)',
 ] as const)
 
 const CLAIM_EVENT = parseAbiItem(
   'event RewardClaimed(address indexed user, address indexed token, uint256 amount)'
 )
 
-const MOAT_API = `https://api.moats.app/api/moat-points/v2/all?contractAddress=${MOAT_CONTRACT}&chainId=43114`
-
-// Legacy context (for UI labels)
-const LEGACY_ERA_RATE       = 0.07148
-const LEGACY_INJECTION_AVAX = 30.6
-const LEGACY_PAYOUT_AVAX    = 2.945
-
-// ── Strict API response types ──────────────────────────────────────────────────
-interface MoatLeaderboardEntry { address?: string; points?: number }
-interface MoatApiResponse { leaderboard?: MoatLeaderboardEntry[] }
-
-// ── Lock multiplier (piecewise linear — same breakpoints as MoatOptimizer) ─────
+// ── Lock multiplier (piecewise linear) ────────────────────────────────────────
 const LOCK_POINTS = [
   { days: 1,   mult: 2.04 }, { days: 7,   mult: 2.11 }, { days: 30,  mult: 2.31 },
   { days: 90,  mult: 2.73 }, { days: 180, mult: 3.23 }, { days: 365, mult: 4.00 },
@@ -107,24 +107,19 @@ function fmtPwr(n: number): string {
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-interface LockItem   { amount: number; endTs: number; durDays: number; active: boolean }
+interface LockItem { amount: number; endTs: number; durDays: number; active: boolean }
 interface CheckResult {
-  pendingAvax:      number
-  userPts:          number
-  totalPts:         number
-  shareRat:         number
-  estimatedDaily:   number
-  projectedPulse:   number
-  claimedLegacy:    number
-  claimedFixed:     number
-  claimedTotal:     number
-  claimCount:       number
-  stakedAmount:     number
-  totalLockedUser:  number
-  activeLockCount:  number
-  totalBurnUser:    number
-  userEarningPower: number
-  locks:            LockItem[]
+  userTotalEarned:    number
+  userTotalClaimed:   number
+  userPendingBalance: number
+  claimCount:         number
+  stakedAmount:       number
+  totalLockedUser:    number
+  activeLockCount:    number
+  totalBurnUser:      number
+  userEarningPower:   number
+  estimatedDaily:     number
+  locks:              LockItem[]
 }
 interface Countdown { hours: number; mins: number; epochPct: number; daysLeft: number }
 
@@ -134,28 +129,25 @@ const PINK_RGB = '255,0,122'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function RewardChecker() {
-  const [addr,      setAddr]      = useState('')
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState<string | null>(null)
-  const [result,    setResult]    = useState<CheckResult | null>(null)
-  const [countdown, setCountdown] = useState<Countdown>({ hours: 0, mins: 0, epochPct: 0, daysLeft: 0 })
+  const [addr,           setAddr]           = useState('')
+  const [checkedAddress, setCheckedAddress] = useState('')
+  const [loading,        setLoading]        = useState(false)
+  const [error,          setError]          = useState<string | null>(null)
+  const [result,         setResult]         = useState<CheckResult | null>(null)
+  const [countdown,      setCountdown]      = useState<Countdown>({ hours: 0, mins: 0, epochPct: 0, daysLeft: 0 })
 
   // ── Live countdown + epoch progress ───────────────────────────────────────
   useEffect(() => {
     function tick() {
-      const now = Math.floor(Date.now() / 1000)
-      const elapsed = Math.max(0, now - FIXED_ERA_START_TS)
-
-      // Next 6h payout boundary
-      const nextOffset  = Math.ceil((elapsed + 1) / PAYOUT_INTERVAL_S) * PAYOUT_INTERVAL_S
-      const remaining   = nextOffset - elapsed
-      const hours       = Math.floor(remaining / 3600)
-      const mins        = Math.floor((remaining % 3600) / 60)
-
-      // Epoch progress (13 days from 3/31)
-      const epochPct  = Math.min(100, (elapsed / EPOCH_DURATION_S) * 100)
-      const daysLeft  = Math.max(0, Math.ceil((EPOCH_DURATION_S - elapsed) / 86400))
-
+      const now           = Math.floor(Date.now() / 1000)
+      const elapsed       = Math.max(0, now - FIXED_ERA_START_TS)
+      const nextOffset    = Math.ceil((elapsed + 1) / PAYOUT_INTERVAL_S) * PAYOUT_INTERVAL_S
+      const remaining     = nextOffset - elapsed
+      const hours         = Math.floor(remaining / 3600)
+      const mins          = Math.floor((remaining % 3600) / 60)
+      const EPOCH_DURATION_S = 14 * 86400
+      const epochPct      = Math.min(100, (elapsed / EPOCH_DURATION_S) * 100)
+      const daysLeft      = Math.max(0, Math.ceil((EPOCH_DURATION_S - elapsed) / 86400))
       setCountdown({ hours, mins, epochPct, daysLeft })
     }
     tick()
@@ -176,35 +168,27 @@ export default function RewardChecker() {
 
     try {
       const address = getAddress(raw)
+      setCheckedAddress(address)
 
       const client: PublicClient = createPublicClient({
         chain:     avalanche,
         transport: http('https://api.avax.network/ext/bc/C/rpc'),
       })
 
-      // ── Parallel on-chain + API fetch ──────────────────────────────────────
       type Tup5 = readonly [bigint, bigint, bigint, bigint, bigint]
       type Tup6 = readonly [readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly boolean[]]
-      type Tup2 = readonly [readonly Address[], readonly bigint[]]
 
-      const [rawUserInfo, rawLocks, rawPending, rawCurPts, rawTotalPts, moatApiRaw] =
-        await Promise.all([
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',             args: [address] }).catch(() => null),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',      args: [address] }).catch(() => null),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards',  args: [address] }).catch(() => null),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getCurrentPoints',     args: [address] }).catch(() => null),
-          client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',          args: [] }).catch(() => null),
-          fetch(MOAT_API)
-            .then((r): Promise<MoatApiResponse | null> => r.ok ? r.json() as Promise<MoatApiResponse> : Promise.resolve(null))
-            .catch((): MoatApiResponse | null => null),
-        ])
+      const [rawUserInfo, rawLocks] = await Promise.all([
+        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',        args: [address] }).catch(() => null),
+        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks', args: [address] }).catch(() => null),
+      ])
 
-      // ── Claim history — best-effort (public RPC block range may be limited) ─
+      // ── Claim history ──────────────────────────────────────────────────────
       const claimLogs = await client
         .getLogs({ address: MOAT_CONTRACT, event: CLAIM_EVENT, args: { user: address }, fromBlock: 0n })
         .catch((): [] => [])
 
-      // ── Fetch block timestamps to split claims by era ──────────────────────
+      // ── Block timestamps for program-start era filtering ──────────────────
       const blockTsMap: Record<string, number> = {}
       const uniqueBlocks = [...new Set(
         claimLogs.map(l => l.blockNumber).filter((bn): bn is bigint => bn != null)
@@ -218,15 +202,9 @@ export default function RewardChecker() {
         })
       )
 
-      // ── Cast to indexed tuples ─────────────────────────────────────────────
       const ui = rawUserInfo as unknown as Tup5 | null
       const lk = rawLocks    as unknown as Tup6 | null
-      const pd = rawPending  as unknown as Tup2 | null
-      const curPts   = (rawCurPts   as bigint | null) ?? 0n
-      const totalPts = (rawTotalPts as bigint | null) ?? 0n
-      const moatApi  = moatApiRaw as MoatApiResponse | null
 
-      // ── Staked / Burned / Lock count ───────────────────────────────────────
       const stakedAmount    = fmtE(ui?.[0])
       const totalBurnUser   = fmtE(ui?.[1])
       const activeLockCount = Number(ui?.[4] ?? 0n)
@@ -249,72 +227,39 @@ export default function RewardChecker() {
         lockItems.push({ amount: amt, endTs, durDays, active })
       }
 
-      // ── Pending rewards ────────────────────────────────────────────────────
-      const pendingAvax = (pd?.[1] ?? []).reduce((s, a) => s + fmtE(a), 0)
-
-      // ── Era-split claimed history (program start: 3/16) ───────────────────
-      let claimedLegacy = 0, claimedFixed = 0
-      for (const log of claimLogs) {
-        const amount = (log.args as { amount?: bigint }).amount ?? 0n
-        const ts     = log.blockNumber ? (blockTsMap[log.blockNumber.toString()] ?? null) : null
-        const avax   = fmtE(amount)
-        // Exclude pre-program claims (before 3/16)
-        if (ts !== null && ts < PROGRAM_START_TS) continue
-        // Unknown timestamp → assign to fixed era (most recent)
-        if (ts === null || ts >= FIXED_ERA_START_TS) claimedFixed += avax
-        else                                          claimedLegacy += avax
-      }
-      const claimedTotal = claimedLegacy + claimedFixed
-      const claimCount   = claimLogs.length
-
-      // ── Points display: Moat API primary, on-chain fallback ───────────────
-      let userPtsDisplay  = 0
-      let totalPtsDisplay = 0
-      let shareRat        = 0
-      const addrLower     = address.toLowerCase()
-
-      if (moatApi?.leaderboard && moatApi.leaderboard.length > 0) {
-        totalPtsDisplay = moatApi.leaderboard.reduce(
-          (s: number, e: MoatLeaderboardEntry) => s + (e.points ?? 0), 0
-        )
-        const entry = moatApi.leaderboard.find(
-          (e: MoatLeaderboardEntry) => e.address?.toLowerCase() === addrLower
-        )
-        userPtsDisplay = entry?.points ?? 0
-        shareRat = totalPtsDisplay > 0 ? userPtsDisplay / totalPtsDisplay : 0
-      } else {
-        const curRaw   = Number(curPts)
-        const totalRaw = Number(totalPts)
-        userPtsDisplay  = curRaw   / POINTS_DIVISOR
-        totalPtsDisplay = totalRaw / POINTS_DIVISOR
-        shareRat        = totalRaw > 0 ? curRaw / totalRaw : 0
-      }
-
       // ── Earning Power: (burned×10) + (locked×mult) + (staked×1) ──────────
       const lockEP = lockItems
         .filter(l => l.active)
         .reduce((s, l) => s + l.amount * getLockMultiplier(l.durDays), 0)
       const userEarningPower = (totalBurnUser * 10) + lockEP + (stakedAmount * 1)
-      const projectedPulse   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX
       const estimatedDaily   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX * PULSES_PER_DAY
 
+      // ── Timeline audit: totalDistributed = Phase1 + Transition + Phase2 ───
+      const totalDistributed = PHASE1_TOTAL + TRANSITION_TOTAL + getPhase2ElapsedAvax()
+      const userTotalEarned  = (userEarningPower / GLOBAL_REWARD_POWER) * totalDistributed
+
+      // ── userTotalClaimed: sum RewardClaimed events since program start ─────
+      let userTotalClaimed = 0
+      for (const log of claimLogs) {
+        const ts = log.blockNumber ? (blockTsMap[log.blockNumber.toString()] ?? null) : null
+        if (ts !== null && ts < PROGRAM_START_TS) continue
+        userTotalClaimed += fmtE((log.args as { amount?: bigint }).amount ?? 0n)
+      }
+      const claimCount        = claimLogs.length
+      const userPendingBalance = Math.max(0, userTotalEarned - userTotalClaimed)
+
       setResult({
-        pendingAvax,
-        userPts:         userPtsDisplay,
-        totalPts:        totalPtsDisplay,
-        shareRat,
-        estimatedDaily,
-        projectedPulse,
-        claimedLegacy,
-        claimedFixed,
-        claimedTotal,
+        userTotalEarned,
+        userTotalClaimed,
+        userPendingBalance,
         claimCount,
         stakedAmount,
         totalLockedUser,
         activeLockCount,
         totalBurnUser,
         userEarningPower,
-        locks:           lockItems,
+        estimatedDaily,
+        locks: lockItems,
       })
     } catch (err: unknown) {
       setError(
@@ -332,7 +277,6 @@ export default function RewardChecker() {
   const lbl  = 'text-[10px] text-zinc-500 font-semibold uppercase tracking-wider block mb-1'
   const sub  = 'text-[10px] text-zinc-600 mt-0.5'
 
-  // ── Epoch progress bar fill ────────────────────────────────────────────────
   const epochBarFill = `linear-gradient(90deg, ${PINK} 0%, #8b5cf6 ${countdown.epochPct}%, rgba(255,255,255,0.06) ${countdown.epochPct}%)`
 
   return (
@@ -344,10 +288,10 @@ export default function RewardChecker() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div className="flex-shrink-0">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: PINK }}>
-            Reward Checker
+            Reward Auditor
           </p>
           <p className="text-[10px] text-zinc-600 mt-0.5">
-            Fixed-interval era · 3/31 → 4/13 · {EPOCH_POOL_AVAX} $AVAX pool
+            Timeline-based · Phase 1 → Transition → Fixed Pulse
           </p>
         </div>
         <div className="flex gap-2 w-full sm:max-w-lg">
@@ -365,7 +309,7 @@ export default function RewardChecker() {
             className="px-5 py-2 rounded-xl text-xs font-bold text-white border transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,0,122,0.35)] disabled:opacity-40 whitespace-nowrap [box-sizing:border-box]"
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.75)' }}
           >
-            {loading ? '…' : 'Check'}
+            {loading ? '…' : 'Audit'}
           </button>
         </div>
       </div>
@@ -388,7 +332,7 @@ export default function RewardChecker() {
       {/* ── Loading ────────────────────────────────────────────────────────── */}
       {loading && (
         <div className="flex items-center justify-center py-14">
-          <span className="text-zinc-500 text-sm">Fetching on-chain data…</span>
+          <span className="text-zinc-500 text-sm">Auditing on-chain data…</span>
         </div>
       )}
 
@@ -396,17 +340,16 @@ export default function RewardChecker() {
       {result && !loading && (
         <div className="flex flex-col gap-3">
 
-          {/* Row 1 — Full-width Pending Rewards (centered) ───────────────────── */}
+          {/* Hero — Your Unclaimed Balance ─────────────────────────────────── */}
           <div
             className="rounded-xl px-5 py-5 border text-center"
             style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: 'rgba(34,211,238,0.25)' }}
           >
-            <span className={lbl + ' justify-center'}>Pending Rewards (Claimable)</span>
-            {/* 3-col grid: left spacer mirrors right group → number stays dead-center */}
+            <span className={lbl + ' justify-center'}>Your Unclaimed Balance</span>
             <div className="grid items-center mt-2" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
               <div />
               <span className="text-6xl font-black [text-shadow:none] leading-none" style={{ color: '#22d3ee' }}>
-                {result.pendingAvax.toFixed(6)}
+                {result.userPendingBalance.toFixed(6)}
               </span>
               <div className="flex items-center pl-3">
                 <span className="text-zinc-400 text-sm font-medium leading-none">$AVAX</span>
@@ -420,24 +363,33 @@ export default function RewardChecker() {
                 </a>
               </div>
             </div>
+            <p className="text-[10px] text-zinc-600 mt-2">
+              ~{result.estimatedDaily.toFixed(4)} $AVAX / day · {((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4)}% pool share
+            </p>
           </div>
 
-          {/* Row 2 — 3 cols: Moat Points · Est. Daily Earnings · Next Payout ── */}
+          {/* Row 2 — Total Earned · Already Withdrawn · Next Payout ─────────── */}
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
-              <span className={lbl}>Your Moat Points</span>
-              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#22d3ee' }}>
-                {fmtN(result.userPts)}
+              <span className={lbl}>Total Historically Earned</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
+                {result.userTotalEarned.toFixed(6)}
               </span>
-              <p className={sub}>Pool: {fmtN(result.totalPts)} pts</p>
+              <p className={sub}>$AVAX · Phase 1 + Transition + Phase 2</p>
             </div>
 
-            <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
-              <span className={lbl}>Earning Power</span>
-              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
-                {fmtPwr(result.userEarningPower)}
+            <div className={card}>
+              <span className={lbl}>Already Withdrawn</span>
+              <span className="text-xl font-black leading-tight [text-shadow:none] text-white">
+                {result.userTotalClaimed.toFixed(6)}
               </span>
-              <p className={sub}>~{result.estimatedDaily.toFixed(4)} $AVAX / day</p>
+              <a
+                href={`https://snowtrace.io/txsInternal?a=${checkedAddress}&tadd=${REWARD_ADDRESS}`}
+                target="_blank" rel="noopener noreferrer"
+                className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors mt-0.5 inline-block"
+              >
+                {result.claimCount} claim{result.claimCount !== 1 ? 's' : ''} · View on Snowtrace ↗
+              </a>
             </div>
 
             <div className={card}>
@@ -466,42 +418,15 @@ export default function RewardChecker() {
               </span>
               <span className="text-[10px] text-zinc-400">
                 Your share: <span className="text-white font-bold">
-                  {result.userEarningPower > 0 ? ((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4) : '0.0000'}%
+                  {result.userEarningPower > 0
+                    ? ((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4)
+                    : '0.0000'}%
                 </span>
               </span>
             </div>
           </div>
 
-          {/* Row 3 — 3 cols: Legacy Claimed · Fixed Claimed · Total Earned ───── */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className={card}>
-              <span className={lbl}>Claimed · % Era (3/16–3/30)</span>
-              <span className="text-xl font-black leading-tight [text-shadow:none] text-white">
-                {result.claimedLegacy.toFixed(6)}
-              </span>
-              <p className={sub}>{(LEGACY_ERA_RATE * 100).toFixed(3)}% pool model · {LEGACY_INJECTION_AVAX} $AVAX injected</p>
-            </div>
-
-            <div className={card}>
-              <span className={lbl}>Claimed · Fixed Era (3/31+)</span>
-              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
-                {result.claimedFixed.toFixed(6)}
-              </span>
-              <p className={sub}>Fixed-interval · {PULSE_AVAX.toFixed(4)} $AVAX / 6h</p>
-            </div>
-
-            <div className={card}>
-              <span className={lbl}>Total Earned (Lifetime)</span>
-              <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
-                {(result.claimedTotal + result.pendingAvax).toFixed(6)}
-              </span>
-              <p className={sub}>
-                {result.claimedTotal.toFixed(6)} claimed · {result.claimCount} tx
-              </p>
-            </div>
-          </div>
-
-          {/* Row 4 — 3 cols: Moat Position ──────────────────────────────────── */}
+          {/* Your Moat Position ──────────────────────────────────────────────── */}
           <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-1">Your Moat Position</p>
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
@@ -527,18 +452,18 @@ export default function RewardChecker() {
             </div>
           </div>
 
-          {/* Row 5 — Active Locks list (conditional) ────────────────────────── */}
+          {/* Active Locks ────────────────────────────────────────────────────── */}
           {result.locks.length > 0 && (
             <div className={card}>
               <p className={lbl + ' mb-3'}>Active Locks</p>
               <div className="flex flex-col divide-y divide-zinc-800">
                 {result.locks.map((lk, i) => {
-                  const endDate  = new Date(lk.endTs * 1000).toLocaleDateString('en-GB', {
+                  const endDate = new Date(lk.endTs * 1000).toLocaleDateString('en-GB', {
                     day: '2-digit', month: 'short', year: 'numeric',
                   })
                   const expired  = lk.endTs < Date.now() / 1000
                   const isActive = lk.active && !expired
-                  const dur      = lk.durDays >= 365
+                  const dur = lk.durDays >= 365
                     ? `${(lk.durDays / 365).toFixed(1)} yr`
                     : `${lk.durDays} days`
                   const mult = getLockMultiplier(lk.durDays)
