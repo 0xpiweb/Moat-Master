@@ -40,8 +40,8 @@ const PAYOUT_INTERVAL_S    = 6 * 3600
 const EPOCH_POOL_AVAX      = 30.41          // WAVAX in pool (reloads 4/13)
 const EPOCH_DAYS           = 14             // Epoch length in days
 const EPOCH_DURATION_S     = EPOCH_DAYS * 86400
-const PULSE_AVAX           = EPOCH_POOL_AVAX / (EPOCH_DAYS * PULSES_PER_DAY)  // ~0.543
-const GLOBAL_EARNING_WEIGHT = 39_000_000_000  // Total earning weight across all protocol users
+const PULSE_AVAX           = 0.577             // Fixed AVAX per pulse (post-3/31 era)
+const GLOBAL_REWARD_POWER  = 3_942_855_424     // Staked×1 + Locked×avg + Burned×10
 // Ecosystem snapshot
 const TOTAL_SUPPLY   = 1_350_000_000
 const GLOBAL_STAKED  =   155_693_804
@@ -78,12 +78,6 @@ const LOCK_POINTS = [
   { days: 90,  mult: 2.73 }, { days: 180, mult: 3.23 }, { days: 365, mult: 4.00 },
   { days: 730, mult: 5.00 },
 ] as const
-
-// ── Moat Points: power curve (same formula as MoatOptimizer) ─────────────────
-// Points = Tokens^0.875 × 1.09  |  EarningWeight = Points × Multiplier
-function calcPts(tokens: number): number {
-  return tokens > 0 ? Math.pow(tokens, 0.875) * 1.09 : 0
-}
 
 function getLockMultiplier(days: number): number {
   if (days <= 1)   return LOCK_POINTS[0].mult
@@ -129,7 +123,7 @@ interface CheckResult {
   totalLockedUser:  number
   activeLockCount:  number
   totalBurnUser:    number
-  userEarningWeight: number
+  userEarningPower: number
   locks:            LockItem[]
 }
 interface Countdown { hours: number; mins: number; epochPct: number; daysLeft: number }
@@ -296,15 +290,13 @@ export default function RewardChecker() {
         shareRat        = totalRaw > 0 ? curRaw / totalRaw : 0
       }
 
-      // ── Earning Weight: Points × Multiplier → pulse share ─────────────────
-      const stakedEW = calcPts(stakedAmount) * 1
-      const lockEW   = lockItems
+      // ── Earning Power: (burned×10) + (locked×mult) + (staked×1) ──────────
+      const lockEP = lockItems
         .filter(l => l.active)
-        .reduce((s, l) => s + calcPts(l.amount) * getLockMultiplier(l.durDays), 0)
-      const burnEW   = calcPts(totalBurnUser) * 10
-      const userEarningWeight = stakedEW + lockEW + burnEW
-      const projectedPulse    = (userEarningWeight / GLOBAL_EARNING_WEIGHT) * PULSE_AVAX
-      const estimatedDaily    = projectedPulse * PULSES_PER_DAY
+        .reduce((s, l) => s + l.amount * getLockMultiplier(l.durDays), 0)
+      const userEarningPower = (totalBurnUser * 10) + lockEP + (stakedAmount * 1)
+      const projectedPulse   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX
+      const estimatedDaily   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX * PULSES_PER_DAY
 
       setResult({
         pendingAvax,
@@ -321,7 +313,7 @@ export default function RewardChecker() {
         totalLockedUser,
         activeLockCount,
         totalBurnUser,
-        userEarningWeight,
+        userEarningPower,
         locks:           lockItems,
       })
     } catch (err: unknown) {
@@ -441,9 +433,9 @@ export default function RewardChecker() {
             </div>
 
             <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
-              <span className={lbl}>Earning Weight</span>
+              <span className={lbl}>Earning Power</span>
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
-                {fmtPwr(result.userEarningWeight)}
+                {fmtPwr(result.userEarningPower)}
               </span>
               <p className={sub}>~{result.estimatedDaily.toFixed(4)} $AVAX / day</p>
             </div>
@@ -474,7 +466,7 @@ export default function RewardChecker() {
               </span>
               <span className="text-[10px] text-zinc-400">
                 Your share: <span className="text-white font-bold">
-                  {result.userEarningWeight > 0 ? ((result.userEarningWeight / GLOBAL_EARNING_WEIGHT) * 100).toFixed(4) : '0.0000'}%
+                  {result.userEarningPower > 0 ? ((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4) : '0.0000'}%
                 </span>
               </span>
             </div>

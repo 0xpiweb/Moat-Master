@@ -42,17 +42,19 @@ function fmt(n: number): string {
 
 const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
-// ── Moat Points: power curve (supply curve — matches Moat App) ───────────────
-// Points = Tokens^0.875 × 1.09   (930k → ~1,856 · Pierre 54M → ~20,100)
-// Earning Weight = Points × Multiplier (1× stake · 2.04–5× lock · 10× burn)
-// DailyReward = (EarningWeight / 39B) × (PULSE_AVAX × 4)
+// ── Display Points (UI only — not used for rewards) ───────────────────────────
+// >10M:  (tokens / 1,000,000,000) × 370,000   — e.g. 54M → ~19,980
+// ≤10M:  tokens × 2 (per thousand)            — e.g. 930k → ~1,860
+function calcDisplayPoints(tokens: number): number {
+  if (tokens > 10_000_000) return (tokens / 1_000_000_000) * 370_000
+  return tokens * 2 / 1_000
+}
 
-// ── Reward distribution (fixed-pulse era from 3/31) ───────────────────────────
-const GLOBAL_EARNING_WEIGHT = 39_000_000_000  // Total earning weight across all protocol users
-const EPOCH_POOL_AVAX      = 30.41          // WAVAX in current pool (reloads 4/13)
-const EPOCH_DAYS           = 14             // Days per epoch
-const PULSES_PER_DAY       = 4             // Pulses per day (every 6 hours)
-const PULSE_AVAX           = EPOCH_POOL_AVAX / (EPOCH_DAYS * PULSES_PER_DAY)  // ~0.543
+// ── Reward engine constants ────────────────────────────────────────────────────
+const GLOBAL_REWARD_POWER  = 3_942_855_424  // Staked×1 + Locked×avg + Burned×10
+const PULSE_AVAX           = 0.577          // Fixed AVAX per pulse
+const EPOCH_POOL_AVAX      = 30.41          // Shown in Estimated Rewards input
+const PULSES_PER_DAY       = 4              // One pulse every 6 hours
 
 // ── Global ecosystem snapshot ─────────────────────────────────────────────────
 const TOTAL_SUPPLY   = 1_350_000_000
@@ -71,16 +73,20 @@ export default function MoatOptimizer() {
   const epochPoolAmt = parseFloat(epochPool) || EPOCH_POOL_AVAX
   const multiplier   = getMultiplier(strategy, days)
 
-  // Power curve: Points = Tokens^0.875 × 1.09
-  const userPoints     = lilAmount > 0 ? Math.pow(lilAmount, 0.875) * 1.09 : 0
-  // Earning Weight = Points × Multiplier (drives reward share)
-  const earningWeight  = userPoints * multiplier
-  const pulseShare     = earningWeight > 0 ? earningWeight / GLOBAL_EARNING_WEIGHT : 0
-  const projectedPulse = pulseShare * PULSE_AVAX
-  const projectedDaily = pulseShare * PULSE_AVAX * PULSES_PER_DAY
-  const biWeekly       = pulseShare * epochPoolAmt
-  const monthly        = projectedDaily * 30
-  const yearly         = projectedDaily * 365
+  // Display Points — UI only, not used for reward calc
+  const displayPoints = calcDisplayPoints(lilAmount)
+
+  // Earning Power — drives reward distribution
+  const staked           = strategy === 'stake' ? lilAmount : 0
+  const locked           = strategy === 'lock'  ? lilAmount : 0
+  const burned           = strategy === 'burn'  ? lilAmount : 0
+  const userEarningPower = (burned * 10) + (locked * multiplier) + (staked * 1)
+  const pulseShare       = userEarningPower > 0 ? userEarningPower / GLOBAL_REWARD_POWER : 0
+  const projectedPulse   = pulseShare * PULSE_AVAX
+  const dailyProjected   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX * PULSES_PER_DAY
+  const biWeekly         = pulseShare * epochPoolAmt
+  const monthly          = dailyProjected * 30
+  const yearly           = dailyProjected * 365
 
   const hasResult = lilAmount > 0
 
@@ -246,10 +252,10 @@ export default function MoatOptimizer() {
 
       <div className="border-t border-zinc-800 mb-5" />
 
-      {/* ── Results Row: Moat Points + Earning Weight ────────────────────── */}
+      {/* ── Results Row: Moat Points + Earning Power ─────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
-        {/* Estimated Moat Points */}
+        {/* Moat Points — display only */}
         <div className="bg-black/40 border border-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-1.5 mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
@@ -258,16 +264,18 @@ export default function MoatOptimizer() {
             </span>
           </div>
           <span className="text-3xl font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.02em' }}>
-            {hasResult ? Math.round(userPoints).toLocaleString('en-US') : '—'}
+            {hasResult ? Math.round(displayPoints).toLocaleString('en-US') : '—'}
           </span>
           <p className="text-[10px] text-zinc-600 mt-1.5">
             {hasResult
-              ? 'Tokens^0.875 × 1.09 · as displayed in Moat App'
-              : 'Power curve · multipliers not applied'}
+              ? lilAmount > 10_000_000
+                ? 'Tokens ÷ 1B × 370k · display only'
+                : 'Tokens × 2 per thousand · display only'
+              : 'As shown in Moat App · multipliers not applied'}
           </p>
         </div>
 
-        {/* Earning Weight */}
+        {/* Earning Power — reward weight */}
         <div
           className="border rounded-xl p-4"
           style={{ backgroundColor: `rgba(${PINK_RGB},0.07)`, borderColor: `rgba(${PINK_RGB},0.35)` }}
@@ -275,15 +283,15 @@ export default function MoatOptimizer() {
           <div className="flex items-center gap-1.5 mb-3">
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PINK }} />
             <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: PINK }}>
-              Earning Weight
+              Earning Power
             </span>
           </div>
           <span className="text-3xl font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.02em' }}>
-            {hasResult ? fmt(earningWeight) : '—'}
+            {hasResult ? fmt(userEarningPower) : '—'}
           </span>
           {hasResult && (
             <p className="text-[10px] text-zinc-600 mt-1.5">
-              {multiplier.toFixed(2)}× applied · {(pulseShare * 100).toFixed(4)}% of {fmt(GLOBAL_EARNING_WEIGHT)} global weight
+              {multiplier.toFixed(2)}× · {(pulseShare * 100).toFixed(4)}% of {fmt(GLOBAL_REWARD_POWER)} reward pool
             </p>
           )}
         </div>
@@ -295,17 +303,17 @@ export default function MoatOptimizer() {
         style={{ backgroundColor: `rgba(${PINK_RGB},0.07)`, borderColor: `rgba(${PINK_RGB},0.35)` }}
       >
         <span className="text-[10px] font-semibold uppercase tracking-widest block mb-2" style={{ color: PINK }}>
-          Daily Projected Reward
+          Daily Projected
         </span>
         <div className="flex items-baseline justify-center gap-2">
           <span className="text-4xl font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.02em' }}>
-            {hasResult ? projectedDaily.toFixed(4) : '—'}
+            ~{hasResult ? dailyProjected.toFixed(4) : '—'}
           </span>
           {hasResult && <span className="text-zinc-400 text-lg font-medium">$AVAX</span>}
         </div>
         {hasResult && (
           <p className="text-xs text-zinc-500 mt-1.5">
-            {projectedPulse.toFixed(4)} $AVAX per pulse · 4 pulses / day · {PULSE_AVAX.toFixed(4)} $AVAX pool each
+            {projectedPulse.toFixed(4)} $AVAX per pulse · {PULSES_PER_DAY} pulses / day · {PULSE_AVAX} $AVAX each
           </p>
         )}
       </div>
@@ -319,7 +327,7 @@ export default function MoatOptimizer() {
         </div>
         <div className="bg-black/40 border border-zinc-800 rounded-xl p-4 text-center">
           <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest block mb-1.5">Yearly Reward</span>
-          <span className="text-xl font-black text-white [text-shadow:none]">{hasResult ? yearly.toFixed(4) : '—'}</span>
+          <span className="text-xl font-black text-white [text-shadow:none]">{hasResult ? yearly.toFixed(3) : '—'}</span>
           {hasResult && <p className="text-xs text-zinc-500 mt-0.5">$AVAX · 365 days</p>}
         </div>
       </div>
@@ -332,10 +340,10 @@ export default function MoatOptimizer() {
         <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mb-2">Global Moat Density</p>
         <div className="flex flex-wrap gap-x-5 gap-y-1.5">
           <span className="text-[10px] text-zinc-400">
-            <span className="text-white font-bold">{MOAT_DENSITY}%</span> of supply active
+            <span className="text-white font-bold">{MOAT_DENSITY}%</span> of supply secured
           </span>
           <span className="text-[10px] text-zinc-400">
-            <span className="text-white font-bold">{fmt(GLOBAL_EARNING_WEIGHT)}</span> global earning weight
+            <span className="text-white font-bold">{fmt(GLOBAL_REWARD_POWER)}</span> global reward power
           </span>
           <span className="text-[10px] text-zinc-400">
             Staked <span className="font-bold" style={{ color: '#67e8f9' }}>{fmt(GLOBAL_STAKED)}</span>
