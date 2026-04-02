@@ -30,7 +30,7 @@ const MOAT_CONTRACT  = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393' as Address
 const REWARD_ADDRESS = '0x5E1AC781157AAF1492f15c351183EEFCa5Fbd746' as Address
 
 // ── Distribution timeline ──────────────────────────────────────────────────────
-const FIXED_ERA_START_TS = Math.floor(new Date('2026-03-29T00:00:00Z').getTime() / 1000)
+const FIXED_ERA_START_TS = Math.floor(new Date('2026-03-30T00:00:00Z').getTime() / 1000)
 const PULSES_PER_DAY     = 4
 const PAYOUT_INTERVAL_S  = 6 * 3600
 const PULSE_AVAX         = 0.577
@@ -139,7 +139,7 @@ export default function RewardChecker() {
       const remaining     = nextOffset - elapsed
       const hours         = Math.floor(remaining / 3600)
       const mins          = Math.floor((remaining % 3600) / 60)
-      const EPOCH_DURATION_S = 14 * 86400
+      const EPOCH_DURATION_S = 13 * 86400
       const epochPct      = Math.min(100, (elapsed / EPOCH_DURATION_S) * 100)
       const daysLeft      = Math.max(0, Math.ceil((EPOCH_DURATION_S - elapsed) / 86400))
       setCountdown({ hours, mins, epochPct, daysLeft })
@@ -288,7 +288,7 @@ export default function RewardChecker() {
       <div className="mb-5">
         <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: epochBarFill }} />
         <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-zinc-600">Mar 29</span>
+          <span className="text-[10px] text-zinc-600">Mar 30</span>
           <span className="text-[10px] text-zinc-500">
             {countdown.daysLeft > 0 ? `${countdown.daysLeft} day${countdown.daysLeft !== 1 ? 's' : ''} remaining` : 'Epoch complete'}
           </span>
