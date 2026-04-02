@@ -42,17 +42,19 @@ function fmt(n: number): string {
 
 const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
-// ── Official Moat v1.2 Formula ─────────────────────────────────────────────────
-// RawSum = (Staked × 1) + (Locked × ML) + (Burned × 10)
-// MoatPoints = √RawSum   — normalized to 1B supply anchor
-// UserShare   = MoatPoints / √GLOBAL_REWARD_POWER
+// ── Official Founder Formula ───────────────────────────────────────────────────
+// RawPower        = (Staked × 1) + (Locked × ML) + (Burned × 10)
+// NormalizedPower = RawPower / NORM_DIVISOR              (1 B anchor)
+// MoatPoints      = √(NormalizedPower) × MOAT_SCALAR     (calibrated)
+// Yields          = (RawPower / GLOBAL_REWARD_POWER) × pool (linear — no √)
 
-// ── Reward engine constants ────────────────────────────────────────────────────
-const GLOBAL_REWARD_POWER  = 3_942_855_424         // Ecosystem raw sum anchor
-const GLOBAL_MOAT_POINTS   = Math.sqrt(GLOBAL_REWARD_POWER)  // ≈ 62,792
-const PULSE_AVAX           = 0.577          // Fixed AVAX per pulse
-const EPOCH_POOL_AVAX      = 30.41          // Shown in Estimated Rewards input
-const PULSES_PER_DAY       = 4              // One pulse every 6 hours
+// ── Formula constants ─────────────────────────────────────────────────────────
+const NORM_DIVISOR        = 1_000_000_000   // 1 B normalisation anchor
+const MOAT_SCALAR         = 27_155          // √(548 000 000 / 1 B) × 27 155 ≈ 20 104
+const GLOBAL_REWARD_POWER = 3_942_855_424   // Ecosystem RawPower anchor (linear denominator)
+const PULSE_AVAX          = 0.577           // Fixed AVAX per pulse
+const EPOCH_POOL_AVAX     = 30.41           // Default epoch pool
+const PULSES_PER_DAY      = 4               // One pulse every 6 hours
 
 // ── Global ecosystem snapshot ─────────────────────────────────────────────────
 const TOTAL_SUPPLY   = 1_350_000_000
@@ -71,17 +73,16 @@ export default function MoatOptimizer() {
   const epochPoolAmt = parseFloat(epochPool) || EPOCH_POOL_AVAX
   const multiplier   = getMultiplier(strategy, days)
 
-  // Dual-Track formula
-  // Track A (display): moatPoints = √rawSum  — compressed scale, matches Moat App
-  // Track B (rewards): rewardShare = rawSum / GLOBAL_REWARD_POWER — linear, preserves 10× burn
-  const staked       = strategy === 'stake' ? lilAmount : 0
-  const locked       = strategy === 'lock'  ? lilAmount : 0
-  const burned       = strategy === 'burn'  ? lilAmount : 0
-  const rawSum       = (staked * 1) + (locked * multiplier) + (burned * 10)
-  const moatPoints   = rawSum > 0 ? Math.sqrt(rawSum) : 0
-  const rewardShare  = rawSum > 0 ? rawSum / GLOBAL_REWARD_POWER : 0
-  const dailyYield   = rewardShare * PULSE_AVAX * PULSES_PER_DAY
-  const epochYield   = rewardShare * epochPoolAmt
+  // Official Founder Formula
+  const staked            = strategy === 'stake' ? lilAmount : 0
+  const locked            = strategy === 'lock'  ? lilAmount : 0
+  const burned            = strategy === 'burn'  ? lilAmount : 0
+  const rawPower          = (staked * 1) + (locked * multiplier) + (burned * 10)
+  const normalizedPower   = rawPower / NORM_DIVISOR
+  const moatPoints        = normalizedPower > 0 ? Math.sqrt(normalizedPower) * MOAT_SCALAR : 0
+  const rewardShare       = rawPower > 0 ? rawPower / GLOBAL_REWARD_POWER : 0
+  const dailyYield        = rewardShare * PULSE_AVAX * PULSES_PER_DAY
+  const epochYield        = rewardShare * epochPoolAmt
 
   const hasResult = lilAmount > 0
 
@@ -258,7 +259,7 @@ export default function MoatOptimizer() {
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>The Projections</span>
               {/* Top: Daily Yield */}
-              <div className="flex flex-col justify-center flex-1 pt-2">
+              <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Daily Yield</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
                   {hasResult ? `~${dailyYield.toFixed(4)}` : '—'}
@@ -267,7 +268,7 @@ export default function MoatOptimizer() {
               </div>
               <div className="border-t border-zinc-800 my-2" />
               {/* Bottom: Epoch Yield */}
-              <div className="flex flex-col justify-center flex-1 pb-1">
+              <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Epoch Yield</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
                   {hasResult ? `~${epochYield.toFixed(4)}` : '—'}
@@ -283,7 +284,7 @@ export default function MoatOptimizer() {
             >
               <span className={lbl + ' justify-center'}>Total Moat Points</span>
               <span className="text-4xl font-black [text-shadow:none] leading-none mt-2" style={{ color: '#22d3ee' }}>
-                {hasResult ? moatPoints.toFixed(2) : '—'}
+                {hasResult ? Math.round(moatPoints).toLocaleString('en-US') : '—'}
               </span>
               {hasResult && <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>}
             </div>
@@ -292,7 +293,7 @@ export default function MoatOptimizer() {
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>Moat Vitality</span>
               {/* Top: Global Moat Density */}
-              <div className="flex flex-col justify-center flex-1 pt-2">
+              <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
                   {MOAT_DENSITY}%
@@ -301,7 +302,7 @@ export default function MoatOptimizer() {
               </div>
               <div className="border-t border-zinc-800 my-2" />
               {/* Bottom: Avg. Multiplier */}
-              <div className="flex flex-col justify-center flex-1 pb-1">
+              <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Avg. Multiplier</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: PINK }}>
                   {multiplier.toFixed(2)}×
