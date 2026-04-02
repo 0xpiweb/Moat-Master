@@ -8,6 +8,7 @@ import {
   getAddress,
   isAddress,
   parseAbi,
+  parseAbiItem,
   type Address,
   type PublicClient,
 } from 'viem'
@@ -65,8 +66,11 @@ function getPhase2ElapsedAvax(): number {
 const MOAT_ABI = parseAbi([
   'function userInfo(address) view returns (uint256 stakedAmount, uint256 totalUserBurn, uint256 stakingPoints, uint256 burnPoints, uint256 activeLockCount)',
   'function getUserAllLocks(address) view returns (uint256[] amounts, uint256[] ends, uint256[] points, uint256[] originalDurations, uint256[] lastUpdated, bool[] active)',
-  'function getAllPendingRewards(address) view returns (address[] tokens, uint256[] amounts)',
 ] as const)
+
+const CLAIM_EVENT = parseAbiItem(
+  'event RewardClaimed(address indexed user, address indexed token, uint256 amount)'
+)
 
 // ── Lock multiplier (piecewise linear) ────────────────────────────────────────
 const LOCK_POINTS = [
@@ -105,16 +109,17 @@ function fmtPwr(n: number): string {
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface LockItem { amount: number; endTs: number; durDays: number; active: boolean }
 interface CheckResult {
-  pendingAvax:      number   // live contract state — hero
-  userTotalEarned:  number   // timeline estimate
-  alreadyWithdrawn: number   // userTotalEarned − pendingAvax
-  stakedAmount:     number
-  totalLockedUser:  number
-  activeLockCount:  number
-  totalBurnUser:    number
-  userEarningPower: number
-  estimatedDaily:   number
-  locks:            LockItem[]
+  userTotalEarned:    number
+  userTotalClaimed:   number
+  userPendingBalance: number
+  claimCount:         number
+  stakedAmount:       number
+  totalLockedUser:    number
+  activeLockCount:    number
+  totalBurnUser:      number
+  userEarningPower:   number
+  estimatedDaily:     number
+  locks:              LockItem[]
 }
 interface Countdown { hours: number; mins: number; epochPct: number; daysLeft: number }
 
@@ -172,17 +177,33 @@ export default function RewardChecker() {
 
       type Tup5 = readonly [bigint, bigint, bigint, bigint, bigint]
       type Tup6 = readonly [readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly boolean[]]
-      type Tup2 = readonly [readonly Address[], readonly bigint[]]
 
-      const [rawUserInfo, rawLocks, rawPending] = await Promise.all([
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',           args: [address] }).catch(() => null),
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',    args: [address] }).catch(() => null),
-        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards', args: [address] }).catch(() => null),
+      const [rawUserInfo, rawLocks] = await Promise.all([
+        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',        args: [address] }).catch(() => null),
+        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks', args: [address] }).catch(() => null),
       ])
+
+      // ── Claim history ──────────────────────────────────────────────────────
+      const claimLogs = await client
+        .getLogs({ address: MOAT_CONTRACT, event: CLAIM_EVENT, args: { user: address }, fromBlock: 0n })
+        .catch((): [] => [])
+
+      // ── Block timestamps for program-start era filtering ──────────────────
+      const blockTsMap: Record<string, number> = {}
+      const uniqueBlocks = [...new Set(
+        claimLogs.map(l => l.blockNumber).filter((bn): bn is bigint => bn != null)
+      )]
+      await Promise.all(
+        uniqueBlocks.map(async bn => {
+          try {
+            const block = await client.getBlock({ blockNumber: bn })
+            blockTsMap[bn.toString()] = Number(block.timestamp)
+          } catch { /* ignore */ }
+        })
+      )
 
       const ui = rawUserInfo as unknown as Tup5 | null
       const lk = rawLocks    as unknown as Tup6 | null
-      const pd = rawPending  as unknown as Tup2 | null
 
       const stakedAmount    = fmtE(ui?.[0])
       const totalBurnUser   = fmtE(ui?.[1])
@@ -206,9 +227,6 @@ export default function RewardChecker() {
         lockItems.push({ amount: amt, endTs, durDays, active })
       }
 
-      // ── Live pending from contract (hero metric) ───────────────────────────
-      const pendingAvax = (pd?.[1] ?? []).reduce((s, a) => s + fmtE(a), 0)
-
       // ── Earning Power: (burned×10) + (locked×mult) + (staked×1) ──────────
       const lockEP = lockItems
         .filter(l => l.active)
@@ -216,16 +234,25 @@ export default function RewardChecker() {
       const userEarningPower = (totalBurnUser * 10) + lockEP + (stakedAmount * 1)
       const estimatedDaily   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX * PULSES_PER_DAY
 
-      // ── Timeline estimate: Phase1 + Transition + Phase2 ───────────────────
+      // ── Timeline audit: totalDistributed = Phase1 + Transition + Phase2 ───
       const totalDistributed = PHASE1_TOTAL + TRANSITION_TOTAL + getPhase2ElapsedAvax()
       const userTotalEarned  = (userEarningPower / GLOBAL_REWARD_POWER) * totalDistributed
-      // Already withdrawn = estimated lifetime accrual minus what's still pending
-      const alreadyWithdrawn = Math.max(0, userTotalEarned - pendingAvax)
+
+      // ── userTotalClaimed: sum RewardClaimed events since program start ─────
+      let userTotalClaimed = 0
+      for (const log of claimLogs) {
+        const ts = log.blockNumber ? (blockTsMap[log.blockNumber.toString()] ?? null) : null
+        if (ts !== null && ts < PROGRAM_START_TS) continue
+        userTotalClaimed += fmtE((log.args as { amount?: bigint }).amount ?? 0n)
+      }
+      const claimCount        = claimLogs.length
+      const userPendingBalance = Math.max(0, userTotalEarned - userTotalClaimed)
 
       setResult({
-        pendingAvax,
         userTotalEarned,
-        alreadyWithdrawn,
+        userTotalClaimed,
+        userPendingBalance,
+        claimCount,
         stakedAmount,
         totalLockedUser,
         activeLockCount,
@@ -261,10 +288,10 @@ export default function RewardChecker() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div className="flex-shrink-0">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: PINK }}>
-            Reward Checker
+            Reward Auditor
           </p>
           <p className="text-[10px] text-zinc-600 mt-0.5">
-            Live contract read · getAllPendingRewards
+            Timeline-based · Phase 1 → Transition → Fixed Pulse
           </p>
         </div>
         <div className="flex gap-2 w-full sm:max-w-lg">
@@ -282,7 +309,7 @@ export default function RewardChecker() {
             className="px-5 py-2 rounded-xl text-xs font-bold text-white border transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,0,122,0.35)] disabled:opacity-40 whitespace-nowrap [box-sizing:border-box]"
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.75)' }}
           >
-            {loading ? '…' : 'Check'}
+            {loading ? '…' : 'Audit'}
           </button>
         </div>
       </div>
@@ -305,7 +332,7 @@ export default function RewardChecker() {
       {/* ── Loading ────────────────────────────────────────────────────────── */}
       {loading && (
         <div className="flex items-center justify-center py-14">
-          <span className="text-zinc-500 text-sm">Fetching on-chain data…</span>
+          <span className="text-zinc-500 text-sm">Auditing on-chain data…</span>
         </div>
       )}
 
@@ -313,7 +340,7 @@ export default function RewardChecker() {
       {result && !loading && (
         <div className="flex flex-col gap-3">
 
-          {/* Hero — Your Unclaimed Balance (live contract) ────────────────── */}
+          {/* Hero — Your Unclaimed Balance ─────────────────────────────────── */}
           <div
             className="rounded-xl px-5 py-5 border text-center"
             style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: 'rgba(34,211,238,0.25)' }}
@@ -322,7 +349,7 @@ export default function RewardChecker() {
             <div className="grid items-center mt-2" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
               <div />
               <span className="text-6xl font-black [text-shadow:none] leading-none" style={{ color: '#22d3ee' }}>
-                {result.pendingAvax.toFixed(6)}
+                {result.userPendingBalance.toFixed(6)}
               </span>
               <div className="flex items-center pl-3">
                 <span className="text-zinc-400 text-sm font-medium leading-none">$AVAX</span>
@@ -337,28 +364,32 @@ export default function RewardChecker() {
               </div>
             </div>
             <p className="text-[10px] text-zinc-600 mt-2">
-              Live contract state · ~{result.estimatedDaily.toFixed(4)} $AVAX / day
+              ~{result.estimatedDaily.toFixed(4)} $AVAX / day · {((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4)}% pool share
             </p>
           </div>
 
-          {/* Row 2 — Daily Projected · Pool Share · Next Payout ───────────── */}
+          {/* Row 2 — Total Earned · Already Withdrawn · Next Payout ─────────── */}
           <div className="grid grid-cols-3 gap-3">
             <div className={card}>
-              <span className={lbl}>Daily Projected</span>
+              <span className={lbl}>Total Historically Earned</span>
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
-                ~{result.estimatedDaily.toFixed(4)}
+                {result.userTotalEarned.toFixed(6)}
               </span>
-              <p className={sub}>$AVAX · {PULSES_PER_DAY} pulses/day · live earning power</p>
+              <p className={sub}>$AVAX · Phase 1 + Transition + Phase 2</p>
             </div>
 
             <div className={card}>
-              <span className={lbl}>Your Pool Share</span>
+              <span className={lbl}>Already Withdrawn</span>
               <span className="text-xl font-black leading-tight [text-shadow:none] text-white">
-                {result.userEarningPower > 0
-                  ? ((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4)
-                  : '0.0000'}%
+                {result.userTotalClaimed.toFixed(6)}
               </span>
-              <p className={sub}>Earning power {fmtPwr(result.userEarningPower)} / {fmtPwr(GLOBAL_REWARD_POWER)}</p>
+              <a
+                href={`https://snowtrace.io/txsInternal?a=${checkedAddress}&tadd=${REWARD_ADDRESS}`}
+                target="_blank" rel="noopener noreferrer"
+                className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors mt-0.5 inline-block"
+              >
+                {result.claimCount} claim{result.claimCount !== 1 ? 's' : ''} · View on Snowtrace ↗
+              </a>
             </div>
 
             <div className={card}>
@@ -418,37 +449,6 @@ export default function RewardChecker() {
                 {fmtN(result.totalBurnUser)}
               </span>
               <p className={sub}>LIL · 10× earning power</p>
-            </div>
-          </div>
-
-          {/* Estimated Lifetime Earnings (timeline math — clearly demoted) ───── */}
-          <div
-            className="rounded-xl px-4 py-3 border"
-            style={{ backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.04)' }}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">
-              Estimated Lifetime Earnings · <span className="font-normal normal-case tracking-normal">Phase 1 + Transition + Phase 2 timeline — approximate only</span>
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <span className="text-[10px] text-zinc-600 block mb-0.5">Total Accrued (Est.)</span>
-                <span className="text-base font-bold text-zinc-500 [text-shadow:none]">
-                  {result.userTotalEarned.toFixed(6)} <span className="text-zinc-700 font-normal text-xs">$AVAX</span>
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-zinc-600 block mb-0.5">Already Withdrawn (Est.)</span>
-                <span className="text-base font-bold text-zinc-500 [text-shadow:none]">
-                  {result.alreadyWithdrawn.toFixed(6)} <span className="text-zinc-700 font-normal text-xs">$AVAX</span>
-                </span>
-                <a
-                  href={`https://snowtrace.io/txsInternal?a=${checkedAddress}&tadd=${REWARD_ADDRESS}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="text-[9px] text-zinc-700 hover:text-zinc-500 transition-colors inline-block mt-0.5"
-                >
-                  View on Snowtrace ↗
-                </a>
-              </div>
             </div>
           </div>
 
