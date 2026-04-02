@@ -353,20 +353,12 @@ export default function RewardChecker() {
             </div>
           </div>
 
-          {/* Next Payout strip */}
-          <div className={card + ' flex items-center justify-between gap-4'}>
-            <span className={lbl + ' mb-0'}>Next Payout · {PULSE_AVAX.toFixed(4)} $AVAX</span>
-            <span className="text-base font-black [text-shadow:none] text-white">
-              In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
-            </span>
-            <span className={sub + ' mt-0'}>{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
-          </div>
-
-          {/* Global Moat Density strip ───────────────────────────────────────── */}
+          {/* Global Moat Density + Next Payout (merged) ───────────────────────── */}
           <div
-            className="rounded-xl px-4 py-2.5 border"
+            className="rounded-xl px-4 py-2.5 border flex items-center justify-between gap-4"
             style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
           >
+            {/* Left — density stats */}
             <div className="flex flex-wrap gap-x-5 gap-y-1 items-center">
               <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest">Global Moat Density</span>
               <span className="text-[10px] text-zinc-400">
@@ -377,13 +369,14 @@ export default function RewardChecker() {
                 {' · '}Locked <span className="font-bold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
                 {' · '}Burned <span className="font-bold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
               </span>
-              <span className="text-[10px] text-zinc-400">
-                Your share: <span className="text-white font-bold">
-                  {result.userEarningPower > 0
-                    ? ((result.userEarningPower / GLOBAL_REWARD_POWER) * 100).toFixed(4)
-                    : '0.0000'}%
-                </span>
+            </div>
+            {/* Right — next payout */}
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mb-0.5">Next Payout</span>
+              <span className="text-sm font-black [text-shadow:none] text-white leading-none">
+                In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
               </span>
+              <span className="text-[10px] text-zinc-600 mt-0.5">{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
             </div>
           </div>
 
