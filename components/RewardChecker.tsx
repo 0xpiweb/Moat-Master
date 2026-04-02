@@ -41,7 +41,7 @@ const EPOCH_POOL_AVAX      = 30.41          // WAVAX in pool (reloads 4/13)
 const EPOCH_DAYS           = 14             // Epoch length in days
 const EPOCH_DURATION_S     = EPOCH_DAYS * 86400
 const PULSE_AVAX           = EPOCH_POOL_AVAX / (EPOCH_DAYS * PULSES_PER_DAY)  // ~0.543
-const GLOBAL_EARNING_POWER = 850_000_000    // Total earning power across all protocol users
+const GLOBAL_EARNING_WEIGHT = 39_000_000_000  // Total earning weight across all protocol users
 // Ecosystem snapshot
 const TOTAL_SUPPLY   = 1_350_000_000
 const GLOBAL_STAKED  =   155_693_804
@@ -79,16 +79,10 @@ const LOCK_POINTS = [
   { days: 730, mult: 5.00 },
 ] as const
 
-// ── Moat Points: linear duration formula (same as MoatOptimizer) ─────────────
-// Lock:  (Tokens × 1.1) + (Tokens × (Days / 365) × 4.545)
-// Stake: Tokens × 1.1   |   Burn: Tokens × 10
-function calcEarningPower(staked: number, locks: { amount: number; durDays: number; active: boolean }[], burned: number): number {
-  const stakedPts = staked * 1.1
-  const lockPts   = locks
-    .filter(l => l.active)
-    .reduce((s, l) => s + (l.amount * 1.1) + (l.amount * (l.durDays / 365) * 4.545), 0)
-  const burnPts   = burned * 10
-  return stakedPts + lockPts + burnPts
+// ── Moat Points: power curve (same formula as MoatOptimizer) ─────────────────
+// Points = Tokens^0.875 × 1.09  |  EarningWeight = Points × Multiplier
+function calcPts(tokens: number): number {
+  return tokens > 0 ? Math.pow(tokens, 0.875) * 1.09 : 0
 }
 
 function getLockMultiplier(days: number): number {
@@ -135,7 +129,7 @@ interface CheckResult {
   totalLockedUser:  number
   activeLockCount:  number
   totalBurnUser:    number
-  userEarningPower: number
+  userEarningWeight: number
   locks:            LockItem[]
 }
 interface Countdown { hours: number; mins: number; epochPct: number; daysLeft: number }
@@ -302,10 +296,15 @@ export default function RewardChecker() {
         shareRat        = totalRaw > 0 ? curRaw / totalRaw : 0
       }
 
-      // ── Earning Power: linear duration formula → pulse share ──────────────
-      const userEarningPower = calcEarningPower(stakedAmount, lockItems, totalBurnUser)
-      const projectedPulse   = (userEarningPower / GLOBAL_EARNING_POWER) * PULSE_AVAX
-      const estimatedDaily   = projectedPulse * PULSES_PER_DAY
+      // ── Earning Weight: Points × Multiplier → pulse share ─────────────────
+      const stakedEW = calcPts(stakedAmount) * 1
+      const lockEW   = lockItems
+        .filter(l => l.active)
+        .reduce((s, l) => s + calcPts(l.amount) * getLockMultiplier(l.durDays), 0)
+      const burnEW   = calcPts(totalBurnUser) * 10
+      const userEarningWeight = stakedEW + lockEW + burnEW
+      const projectedPulse    = (userEarningWeight / GLOBAL_EARNING_WEIGHT) * PULSE_AVAX
+      const estimatedDaily    = projectedPulse * PULSES_PER_DAY
 
       setResult({
         pendingAvax,
@@ -322,7 +321,7 @@ export default function RewardChecker() {
         totalLockedUser,
         activeLockCount,
         totalBurnUser,
-        userEarningPower,
+        userEarningWeight,
         locks:           lockItems,
       })
     } catch (err: unknown) {
@@ -442,9 +441,9 @@ export default function RewardChecker() {
             </div>
 
             <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
-              <span className={lbl}>Earning Power</span>
+              <span className={lbl}>Earning Weight</span>
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
-                {fmtPwr(result.userEarningPower)}
+                {fmtPwr(result.userEarningWeight)}
               </span>
               <p className={sub}>~{result.estimatedDaily.toFixed(4)} $AVAX / day</p>
             </div>
@@ -475,7 +474,7 @@ export default function RewardChecker() {
               </span>
               <span className="text-[10px] text-zinc-400">
                 Your share: <span className="text-white font-bold">
-                  {result.userEarningPower > 0 ? ((result.userEarningPower / GLOBAL_EARNING_POWER) * 100).toFixed(4) : '0.0000'}%
+                  {result.userEarningWeight > 0 ? ((result.userEarningWeight / GLOBAL_EARNING_WEIGHT) * 100).toFixed(4) : '0.0000'}%
                 </span>
               </span>
             </div>
