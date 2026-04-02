@@ -282,7 +282,7 @@ export default function RewardChecker() {
             className="px-5 py-2 rounded-xl text-xs font-bold text-white border transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,0,122,0.35)] disabled:opacity-40 whitespace-nowrap [box-sizing:border-box]"
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.75)' }}
           >
-            {loading ? '…' : 'Audit'}
+            {loading ? '…' : 'Check'}
           </button>
         </div>
       </div>
