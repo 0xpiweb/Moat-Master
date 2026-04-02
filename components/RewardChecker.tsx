@@ -314,22 +314,24 @@ export default function RewardChecker() {
           <div className="grid grid-cols-3 gap-3 items-stretch">
 
             {/* Card 1 — Rewards Ledger */}
-            <div className={card + ' flex flex-col justify-center gap-3'}>
+            <div className={card + ' flex flex-col'}>
               <span className={lbl}>Rewards Ledger</span>
-              <div>
-                <p className="text-[10px] text-zinc-500 mb-0.5">Total Earned (Est.)</p>
-                <span className="text-2xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
+              {/* Top slot */}
+              <div className="flex flex-col justify-center flex-1 pt-2">
+                <p className="text-[10px] text-zinc-500 mb-1">Total Earned (Est.)</p>
+                <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
                   {result.userTotalEarned.toFixed(6)}
                 </span>
-                <span className="text-zinc-600 text-xs ml-1">$AVAX</span>
+                <span className="text-[10px] text-zinc-600 mt-0.5">$AVAX</span>
               </div>
-              <div className="border-t border-zinc-800" />
-              <div>
-                <p className="text-[10px] text-zinc-500 mb-0.5">Already Claimed (Est.)</p>
-                <span className="text-2xl font-black [text-shadow:none] leading-tight text-white">
+              <div className="border-t border-zinc-800 my-2" />
+              {/* Bottom slot */}
+              <div className="flex flex-col justify-center flex-1 pb-1">
+                <p className="text-[10px] text-zinc-500 mb-1">Already Claimed (Est.)</p>
+                <span className="text-xl font-black [text-shadow:none] leading-tight text-slate-500">
                   {result.alreadyWithdrawn.toFixed(6)}
                 </span>
-                <span className="text-zinc-600 text-xs ml-1">$AVAX</span>
+                <span className="text-[10px] text-zinc-700 mt-0.5">$AVAX</span>
               </div>
             </div>
 
@@ -355,26 +357,28 @@ export default function RewardChecker() {
             </div>
 
             {/* Card 3 — Moat Vitality */}
-            <div className={card + ' flex flex-col justify-center gap-3'}>
+            <div className={card + ' flex flex-col'}>
               <span className={lbl}>Moat Vitality</span>
-              <div>
-                <p className="text-[10px] text-zinc-500 mb-0.5">Global Moat Density</p>
-                <span className="text-2xl font-black [text-shadow:none] leading-tight text-white">
+              {/* Top slot */}
+              <div className="flex flex-col justify-center flex-1 pt-2">
+                <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
+                <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
                   {MOAT_DENSITY}%
                 </span>
-                <p className="text-[10px] text-zinc-600 mt-0.5">
-                  Staked <span className="font-bold" style={{ color: '#67e8f9' }}>{fmtPwr(GLOBAL_STAKED)}</span>
-                  {' · '}Locked <span className="font-bold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
-                  {' · '}Burned <span className="font-bold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
-                </p>
+                <span className="text-[10px] text-zinc-600 mt-0.5">
+                  Staked <span className="font-semibold" style={{ color: '#67e8f9' }}>{fmtPwr(GLOBAL_STAKED)}</span>
+                  {' · '}Locked <span className="font-semibold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
+                  {' · '}Burned <span className="font-semibold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
+                </span>
               </div>
-              <div className="border-t border-zinc-800" />
-              <div>
-                <p className="text-[10px] text-zinc-500 mb-0.5">Next Payout</p>
-                <span className="text-2xl font-black [text-shadow:none] leading-tight text-white">
+              <div className="border-t border-zinc-800 my-2" />
+              {/* Bottom slot */}
+              <div className="flex flex-col justify-center flex-1 pb-1">
+                <p className="text-[10px] text-zinc-500 mb-1">Next Payout</p>
+                <span className="text-xl font-black font-mono [text-shadow:none] leading-tight text-white">
                   In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
                 </span>
-                <p className="text-[10px] text-zinc-600 mt-0.5">{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</p>
+                <span className="text-[10px] text-zinc-600 mt-0.5">{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
               </div>
             </div>
           </div>
