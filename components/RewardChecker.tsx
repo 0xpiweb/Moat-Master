@@ -343,9 +343,9 @@ export default function RewardChecker() {
               <p className="text-[10px] text-zinc-600 mt-2">Live contract state</p>
             </div>
 
-            {/* RIGHT — Already Claimed */}
+            {/* RIGHT — Already Claimed (Est.) */}
             <div className={card + ' flex flex-col justify-center'}>
-              <span className={lbl}>Already Claimed</span>
+              <span className={lbl}>Already Claimed (Est.)</span>
               <span className="text-2xl font-black leading-tight [text-shadow:none] text-white mt-1">
                 {result.alreadyWithdrawn.toFixed(6)}
               </span>
@@ -359,7 +359,7 @@ export default function RewardChecker() {
             <span className="text-base font-black [text-shadow:none] text-white">
               In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
             </span>
-            <span className={sub + ' mt-0'}>{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily · ~{result.estimatedDaily.toFixed(4)} your share</span>
+            <span className={sub + ' mt-0'}>{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
           </div>
 
           {/* Global Moat Density strip ───────────────────────────────────────── */}
