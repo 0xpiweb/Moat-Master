@@ -43,8 +43,10 @@ function fmt(n: number): string {
 
 const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
 
-// Static fallback — used if API is unavailable
-const POOL_TOTAL_FALLBACK = 288_850
+// ── Formula constants ─────────────────────────────────────────────────────
+const NORMALIZATION_CAP    = 1_000_000_000   // Total $LIL supply
+const GLOBAL_SCALING_FACTOR = 27_240          // Derived: sqrt(0.5452215) × 27240 ≈ 20,104 pts
+const POOL_TOTAL_FALLBACK   = 288_670         // Static fallback when API unavailable
 
 const MOAT_API =
   'https://api.moats.app/api/moat-points/v2/all' +
@@ -75,13 +77,15 @@ export default function MoatOptimizer() {
 
   const lilAmount  = parseFloat(amount)       || 0
   const avaxInput  = parseFloat(epochRewards) || 0
-  const multiplier = getMultiplier(strategy, days)
-  // 1B normalisation: Points = (adjustedTokens / 1,000,000,000) × 37,000
-  const GLOBAL_MULT = 37_000
-  const userPoints  = (lilAmount * multiplier / 1_000_000_000) * GLOBAL_MULT
+  const multiplier      = getMultiplier(strategy, days)
+  // Adjusted Power = input × strategy multiplier
+  const adjustedPower   = lilAmount * multiplier
+  // √-normalisation: Points = sqrt(adjustedPower / 1B) × GLOBAL_SCALING_FACTOR
+  const normalizedRatio = adjustedPower / NORMALIZATION_CAP
+  const userPoints      = Math.sqrt(normalizedRatio) * GLOBAL_SCALING_FACTOR
   // Dilution: user's simulated points are added to the pool, so denominator grows
-  const dilutedPool = poolTotal + userPoints
-  const share       = userPoints > 0 ? userPoints / dilutedPool : 0
+  const dilutedPool     = poolTotal + userPoints
+  const share           = userPoints > 0 ? userPoints / dilutedPool : 0
 
   const biweekly = share * avaxInput
   const monthly  = biweekly * 2
@@ -279,7 +283,7 @@ export default function MoatOptimizer() {
           </span>
           {userPoints > 0 && (
             <p className="text-[10px] mt-1" style={{ color: PINK }}>
-              {multiplier.toFixed(2)}× effective
+              {multiplier.toFixed(2)}× · {Math.round(adjustedPower).toLocaleString('en-US')} adj. power
             </p>
           )}
         </div>
@@ -346,7 +350,7 @@ export default function MoatOptimizer() {
 
       {/* ── Formula note ──────────────────────────────────────────── */}
       <p className="text-[10px] text-zinc-600 text-center mt-4 leading-relaxed">
-        Points are normalized against the total $LIL supply (1B) and adjusted for current Moat density.
+        Points = √(Adjusted Power / 1B) × 27,240 · Normalized against total $LIL supply and adjusted for Moat density.
       </p>
     </div>
   )
