@@ -313,9 +313,9 @@ export default function RewardChecker() {
           {/* Dual-layer row: Left (timeline) · Center HERO (contract) · Right (withdrawn) */}
           <div className="grid grid-cols-3 gap-3 items-stretch">
 
-            {/* LEFT — Total Life-to-Date Accrued (Est.) */}
+            {/* LEFT — Total Earned (Est.) */}
             <div className={card + ' flex flex-col justify-center'}>
-              <span className={lbl}>Total Life-to-Date Accrued (Est.)</span>
+              <span className={lbl}>Total Earned (Est.)</span>
               <span className="text-2xl font-black leading-tight [text-shadow:none] mt-1" style={{ color: '#4ade80' }}>
                 {result.userTotalEarned.toFixed(6)}
               </span>
@@ -343,9 +343,9 @@ export default function RewardChecker() {
               <p className="text-[10px] text-zinc-600 mt-2">Live contract state</p>
             </div>
 
-            {/* RIGHT — Already Withdrawn */}
+            {/* RIGHT — Already Claimed */}
             <div className={card + ' flex flex-col justify-center'}>
-              <span className={lbl}>Already Withdrawn</span>
+              <span className={lbl}>Already Claimed</span>
               <span className="text-2xl font-black leading-tight [text-shadow:none] text-white mt-1">
                 {result.alreadyWithdrawn.toFixed(6)}
               </span>
