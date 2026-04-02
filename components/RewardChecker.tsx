@@ -41,7 +41,7 @@ const EPOCH_POOL_AVAX      = 30.41          // WAVAX in pool (reloads 4/13)
 const EPOCH_DAYS           = 14             // Epoch length in days
 const EPOCH_DURATION_S     = EPOCH_DAYS * 86400
 const PULSE_AVAX           = EPOCH_POOL_AVAX / (EPOCH_DAYS * PULSES_PER_DAY)  // ~0.543
-const GLOBAL_EARNING_POWER = 3_942_855_424   // Staked×1 + Locked×3.76avg + Burned×10
+const GLOBAL_EARNING_WEIGHT = 39_000_000_000  // ~3.9B global points × ~10× avg multiplier
 // Ecosystem snapshot
 const TOTAL_SUPPLY   = 1_350_000_000
 const GLOBAL_STAKED  =   155_693_804
@@ -78,6 +78,14 @@ const LOCK_POINTS = [
   { days: 90,  mult: 2.73 }, { days: 180, mult: 3.23 }, { days: 365, mult: 4.00 },
   { days: 730, mult: 5.00 },
 ] as const
+
+// ── Moat Points (tiered normalization — matches Moat App UI) ──────────────────
+const DISPLAY_THRESHOLD  = 40_000_000
+const DISPLAY_DIVISOR_LO = 2_100
+const DISPLAY_DIVISOR_HI = 2_700
+function calcMoatPoints(tokens: number): number {
+  return tokens >= DISPLAY_THRESHOLD ? tokens / DISPLAY_DIVISOR_HI : tokens / DISPLAY_DIVISOR_LO
+}
 
 function getLockMultiplier(days: number): number {
   if (days <= 1)   return LOCK_POINTS[0].mult
@@ -123,7 +131,7 @@ interface CheckResult {
   totalLockedUser:  number
   activeLockCount:  number
   totalBurnUser:    number
-  userEarningPower: number
+  userEarningWeight: number
   locks:            LockItem[]
 }
 interface Countdown { hours: number; mins: number; epochPct: number; daysLeft: number }
@@ -290,14 +298,15 @@ export default function RewardChecker() {
         shareRat        = totalRaw > 0 ? curRaw / totalRaw : 0
       }
 
-      // ── Earning power + fixed-interval daily estimate ──────────────────────
-      // UserEarningPower = (Staked × 1) + (Locked × multiplier) + (Burned × 10)
-      const lockEP = lockItems
+      // ── Earning Weight: Points × Multiplier drives pulse share ────────────
+      const lockEW = lockItems
         .filter(l => l.active)
-        .reduce((s, l) => s + l.amount * getLockMultiplier(l.durDays), 0)
-      const userEarningPower = (stakedAmount * 1) + lockEP + (totalBurnUser * 10)
-      const projectedPulse   = (userEarningPower / GLOBAL_EARNING_POWER) * PULSE_AVAX
-      const estimatedDaily   = projectedPulse * PULSES_PER_DAY
+        .reduce((s, l) => s + calcMoatPoints(l.amount) * getLockMultiplier(l.durDays), 0)
+      const userEarningWeight = calcMoatPoints(stakedAmount) * 1
+        + lockEW
+        + calcMoatPoints(totalBurnUser) * 10
+      const projectedPulse    = (userEarningWeight / GLOBAL_EARNING_WEIGHT) * PULSE_AVAX
+      const estimatedDaily    = projectedPulse * PULSES_PER_DAY
 
       setResult({
         pendingAvax,
@@ -314,7 +323,7 @@ export default function RewardChecker() {
         totalLockedUser,
         activeLockCount,
         totalBurnUser,
-        userEarningPower,
+        userEarningWeight,
         locks:           lockItems,
       })
     } catch (err: unknown) {
@@ -434,9 +443,9 @@ export default function RewardChecker() {
             </div>
 
             <div className={card} style={{ borderColor: `rgba(${PINK_RGB},0.3)` }}>
-              <span className={lbl}>Earning Power</span>
+              <span className={lbl}>Earning Weight</span>
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: PINK }}>
-                {fmtPwr(result.userEarningPower)}
+                {fmtPwr(result.userEarningWeight)}
               </span>
               <p className={sub}>~{result.estimatedDaily.toFixed(4)} $AVAX / day</p>
             </div>
@@ -467,7 +476,7 @@ export default function RewardChecker() {
               </span>
               <span className="text-[10px] text-zinc-400">
                 Your share: <span className="text-white font-bold">
-                  {result.userEarningPower > 0 ? ((result.userEarningPower / GLOBAL_EARNING_POWER) * 100).toFixed(4) : '0.0000'}%
+                  {result.userEarningWeight > 0 ? ((result.userEarningWeight / GLOBAL_EARNING_WEIGHT) * 100).toFixed(4) : '0.0000'}%
                 </span>
               </span>
             </div>
@@ -488,7 +497,7 @@ export default function RewardChecker() {
               <span className="text-xl font-black leading-tight [text-shadow:none]" style={{ color: '#4ade80' }}>
                 {result.claimedFixed.toFixed(6)}
               </span>
-              <p className={sub}>Fixed-interval · {PAYOUT_AVAX} $AVAX / 6h</p>
+              <p className={sub}>Fixed-interval · {PULSE_AVAX.toFixed(4)} $AVAX / 6h</p>
             </div>
 
             <div className={card}>

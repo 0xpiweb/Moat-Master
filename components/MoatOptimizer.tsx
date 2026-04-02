@@ -49,8 +49,8 @@ const DISPLAY_THRESHOLD  = 40_000_000   // Token count breakpoint
 const DISPLAY_DIVISOR_LO = 2_100        // <40M divisor
 const DISPLAY_DIVISOR_HI = 2_700        // ≥40M divisor
 
-// ── Tier 2: Earning Power (fixed-pulse era from 3/31) ─────────────────────────
-const GLOBAL_EARNING_POWER = 3_942_855_424   // Staked×1 + Locked×3.76avg + Burned×10
+// ── Tier 2: Earning Weight (Points × Multiplier, fixed-pulse era from 3/31) ───
+const GLOBAL_EARNING_WEIGHT = 39_000_000_000  // ~3.9B global points × ~10× avg multiplier
 const EPOCH_POOL_AVAX      = 30.41           // WAVAX in current pool (reloads 4/13)
 const EPOCH_DAYS           = 14              // Days per epoch
 const PULSES_PER_DAY       = 4              // Pulses per day (every 6 hours)
@@ -76,13 +76,10 @@ export default function MoatOptimizer() {
     ? lilAmount / DISPLAY_DIVISOR_HI
     : lilAmount / DISPLAY_DIVISOR_LO
 
-  // Tier 2 — Earning Power: multipliers applied, drives pulse share
-  const staked = strategy === 'stake' ? lilAmount : 0
-  const locked = strategy === 'lock'  ? lilAmount : 0
-  const burned  = strategy === 'burn'  ? lilAmount : 0
-  const userEarningPower = (staked * 1) + (locked * multiplier) + (burned * 10)
-  const pulseShare       = userEarningPower > 0 ? userEarningPower / GLOBAL_EARNING_POWER : 0
-  const projectedPulse   = pulseShare * PULSE_AVAX
+  // Tier 2 — Earning Weight: Points × Multiplier drives pulse share
+  const earningWeight  = displayedPoints * multiplier
+  const pulseShare     = earningWeight > 0 ? earningWeight / GLOBAL_EARNING_WEIGHT : 0
+  const projectedPulse = pulseShare * PULSE_AVAX
   const projectedDaily   = projectedPulse * PULSES_PER_DAY
   const monthly          = projectedDaily * 30
   const yearly           = projectedDaily * 365
@@ -273,15 +270,15 @@ export default function MoatOptimizer() {
           <div className="flex items-center gap-1.5 mb-3">
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PINK }} />
             <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: PINK }}>
-              Earning Power
+              Earning Weight
             </span>
           </div>
           <span className="text-3xl font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.02em' }}>
-            {hasResult ? fmt(userEarningPower) : '—'}
+            {hasResult ? fmt(earningWeight) : '—'}
           </span>
           {hasResult && (
             <p className="text-[10px] text-zinc-600 mt-1.5">
-              {multiplier.toFixed(2)}× applied · {(pulseShare * 100).toFixed(4)}% of {fmt(GLOBAL_EARNING_POWER)} global pool
+              {multiplier.toFixed(2)}× applied · {(pulseShare * 100).toFixed(4)}% of {fmt(GLOBAL_EARNING_WEIGHT)} global weight
             </p>
           )}
         </div>
@@ -333,7 +330,7 @@ export default function MoatOptimizer() {
             <span className="text-white font-bold">{MOAT_DENSITY}%</span> of supply active
           </span>
           <span className="text-[10px] text-zinc-400">
-            <span className="text-white font-bold">{fmt(GLOBAL_EARNING_POWER)}</span> global earning power
+            <span className="text-white font-bold">{fmt(GLOBAL_EARNING_WEIGHT)}</span> global earning weight
           </span>
           <span className="text-[10px] text-zinc-400">
             Staked <span className="font-bold" style={{ color: '#67e8f9' }}>{fmt(GLOBAL_STAKED)}</span>
