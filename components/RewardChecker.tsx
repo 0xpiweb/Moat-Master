@@ -310,19 +310,30 @@ export default function RewardChecker() {
       {result && !loading && (
         <div className="flex flex-col gap-3">
 
-          {/* Dual-layer row: Left (timeline) · Center HERO (contract) · Right (withdrawn) */}
+          {/* Main 3-col grid ─────────────────────────────────────────────────── */}
           <div className="grid grid-cols-3 gap-3 items-stretch">
 
-            {/* LEFT — Total Earned (Est.) */}
-            <div className={card + ' flex flex-col justify-center'}>
-              <span className={lbl}>Total Earned (Est.)</span>
-              <span className="text-2xl font-black leading-tight [text-shadow:none] mt-1" style={{ color: '#4ade80' }}>
-                {result.userTotalEarned.toFixed(6)}
-              </span>
-              <p className={sub}>$AVAX</p>
+            {/* Card 1 — Rewards Ledger */}
+            <div className={card + ' flex flex-col justify-center gap-3'}>
+              <span className={lbl}>Rewards Ledger</span>
+              <div>
+                <p className="text-[10px] text-zinc-500 mb-0.5">Total Earned (Est.)</p>
+                <span className="text-2xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
+                  {result.userTotalEarned.toFixed(6)}
+                </span>
+                <span className="text-zinc-600 text-xs ml-1">$AVAX</span>
+              </div>
+              <div className="border-t border-zinc-800" />
+              <div>
+                <p className="text-[10px] text-zinc-500 mb-0.5">Already Claimed (Est.)</p>
+                <span className="text-2xl font-black [text-shadow:none] leading-tight text-white">
+                  {result.alreadyWithdrawn.toFixed(6)}
+                </span>
+                <span className="text-zinc-600 text-xs ml-1">$AVAX</span>
+              </div>
             </div>
 
-            {/* CENTER HERO — Your Unclaimed Balance (live contract) */}
+            {/* Card 2 — Your Unclaimed Balance (Hero) */}
             <div
               className="rounded-xl px-5 py-5 border flex flex-col items-center justify-center text-center"
               style={{ backgroundColor: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.4)', boxShadow: '0 0 20px rgba(34,211,238,0.08)' }}
@@ -343,40 +354,28 @@ export default function RewardChecker() {
               <p className="text-[10px] text-zinc-600 mt-2">Live contract state</p>
             </div>
 
-            {/* RIGHT — Already Claimed (Est.) */}
-            <div className={card + ' flex flex-col justify-center'}>
-              <span className={lbl}>Already Claimed (Est.)</span>
-              <span className="text-2xl font-black leading-tight [text-shadow:none] text-white mt-1">
-                {result.alreadyWithdrawn.toFixed(6)}
-              </span>
-              <p className={sub}>$AVAX</p>
-            </div>
-          </div>
-
-          {/* Global Moat Density + Next Payout (merged) ───────────────────────── */}
-          <div
-            className="rounded-xl px-4 py-2.5 border flex items-center justify-between gap-4"
-            style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
-          >
-            {/* Left — density stats */}
-            <div className="flex flex-wrap gap-x-5 gap-y-1 items-center">
-              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest">Global Moat Density</span>
-              <span className="text-[10px] text-zinc-400">
-                <span className="text-white font-bold">{MOAT_DENSITY}%</span> active
-              </span>
-              <span className="text-[10px] text-zinc-400">
-                Staked <span className="font-bold" style={{ color: '#67e8f9' }}>{fmtPwr(GLOBAL_STAKED)}</span>
-                {' · '}Locked <span className="font-bold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
-                {' · '}Burned <span className="font-bold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
-              </span>
-            </div>
-            {/* Right — next payout */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest">Next Payout</span>
-              <span className="text-sm font-black [text-shadow:none] text-white">
-                In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
-              </span>
-              <span className="text-[10px] text-zinc-600">· {(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
+            {/* Card 3 — Moat Vitality */}
+            <div className={card + ' flex flex-col justify-center gap-3'}>
+              <span className={lbl}>Moat Vitality</span>
+              <div>
+                <p className="text-[10px] text-zinc-500 mb-0.5">Global Moat Density</p>
+                <span className="text-2xl font-black [text-shadow:none] leading-tight text-white">
+                  {MOAT_DENSITY}%
+                </span>
+                <p className="text-[10px] text-zinc-600 mt-0.5">
+                  Staked <span className="font-bold" style={{ color: '#67e8f9' }}>{fmtPwr(GLOBAL_STAKED)}</span>
+                  {' · '}Locked <span className="font-bold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
+                  {' · '}Burned <span className="font-bold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
+                </p>
+              </div>
+              <div className="border-t border-zinc-800" />
+              <div>
+                <p className="text-[10px] text-zinc-500 mb-0.5">Next Payout</p>
+                <span className="text-2xl font-black [text-shadow:none] leading-tight text-white">
+                  In {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
+                </span>
+                <p className="text-[10px] text-zinc-600 mt-0.5">{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</p>
+              </div>
             </div>
           </div>
 
