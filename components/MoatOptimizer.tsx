@@ -147,15 +147,14 @@ export default function MoatOptimizer() {
   const burned   = strategy === 'burn'  ? lilAmount : 0
   // MoatPoints: locked always × 5 (fixed, duration-independent)
   const rawPower = (staked * 1) + (locked * LOCK_MULT) + (burned * 10)
-  // Reward share: locked × ML (duration-based — longer lock = higher share)
-  const rawPowerRewards = (staked * 1) + (locked * multiplier) + (burned * 10)
 
   // MoatPoints = √(RawPower / 1B) × MOAT_SCALAR  (1B normalization, per docs)
   const moatPoints = rawPower > 0 ? Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR : 0
 
-  // Reward share = √(userRawPower_rewards) / Σ(√rawPower_i)
-  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_tokens_i) across all users
-  const userSqrt  = rawPowerRewards > 0 ? Math.sqrt(rawPowerRewards) : 0
+  // Reward share = (MoatPoints × avgMultiplier) / Σ(MoatPoints_i × mult_i)
+  // Equivalent to (√rawPower × mult) / Σ(√rawPower_i × mult_i) — SCALAR/√1B cancels in ratio
+  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_i × mult_i) across all users
+  const userSqrt  = rawPower > 0 ? Math.sqrt(rawPower) * multiplier : 0
   const userShare = live.sqrtSumScaled > 0 && userSqrt > 0
     ? userSqrt / live.sqrtSumScaled : 0
   const dailyYield       = userShare * (live.epochYield / 14)
