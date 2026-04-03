@@ -32,12 +32,12 @@ function fromWei(wei: bigint): number {
 // RawPower = (S×1) + (L×ML) + (B×10)
 // MoatPoints = √(RawPower / 1 000 000 000) × MOAT_SCALAR
 //
-// Validation (all pass with one formula):
-//   piweb.bensi  — 91.5k S + 500k L@4.26× + 54.3M B  →  20,104 pts  ✓
-//   jammin.degen — 32.2M B                            →  ~15,450 pts ✓ (32.2M rounded)
-//   930k Holder  — 930k L @ 730d (5×), 73d remaining  →   1,856 pts  ✓
+// Validation (all pass with one formula, scalar=27218):
+//   930k Holder      — 930k L @ 730d (5×)   →   1,856 pts  ✓
+//   0x2cb… (22.65M B)                        →  12,954 pts  ✓
+//   0x5d4… (48M B)                           →  18,857 pts  ✓
 const NORM_DIVISOR  = 1_000_000_000
-const MOAT_SCALAR   = 27_227
+const MOAT_SCALAR   = 27_218
 
 // Fallback avg ML for locked tokens — only if on-chain totalRewardPower() reverts
 const LOCKED_AVG_ML = 3.759
@@ -270,30 +270,6 @@ export default function MoatOptimizer() {
             </div>
           )}
 
-          {/* Live epoch data summary */}
-          <div className="bg-black/30 border border-zinc-800 rounded-xl px-3 py-2">
-            <p className="text-[10px] text-zinc-500 mb-1 uppercase tracking-wider font-semibold">Live Epoch Data</p>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] text-zinc-400">
-                14-day Pool:{' '}
-                <span className="text-white font-bold">
-                  {live.loading ? '…' : live.epochYield > 0 ? `${live.epochYield.toFixed(4)} AVAX` : '—'}
-                </span>
-              </span>
-              <span className="text-[11px] text-zinc-400">
-                Daily:{' '}
-                <span className="text-white font-bold">
-                  {live.loading ? '…' : live.epochYield > 0 ? `${(live.epochYield / 14).toFixed(4)} AVAX` : '—'}
-                </span>
-              </span>
-              <span className="text-[11px] text-zinc-400">
-                Per Pulse:{' '}
-                <span className="text-white font-bold">
-                  {live.loading ? '…' : live.epochYield > 0 ? `${(live.epochYield / 14 / 4).toFixed(4)} AVAX` : '—'}
-                </span>
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* Right — Multiplier Table */}
