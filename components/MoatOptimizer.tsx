@@ -337,6 +337,28 @@ export default function MoatOptimizer() {
             {/* Card 1 — Estimated Rewards */}
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>Est. Rewards</span>
+
+              {/* Green reward-share bar */}
+              <div className="mb-3">
+                <div className="flex justify-between items-baseline mb-1.5">
+                  <span className="text-[10px] text-zinc-500">Reward Share</span>
+                  <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
+                    {hasResult && live.sqrtSumScaled > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: hasResult && live.sqrtSumScaled > 0
+                        ? `${Math.min(Math.max(userShare * 2000, 0.5), 100)}%`
+                        : '0%',
+                      background: 'linear-gradient(90deg, #4ade80, #22d3ee)',
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Daily Yield</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
