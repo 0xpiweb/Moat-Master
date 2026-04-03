@@ -1,13 +1,50 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { createPublicClient, http, parseAbi, formatEther } from 'viem'
 
 const PINK     = '#ff007a'
 const PINK_RGB = '255,0,122'
 
+// ── Chain / contracts ─────────────────────────────────────────────────────────
+const RPC_URL       = 'https://api.avax.network/ext/bc/C/rpc'
+const MOAT_CONTRACT = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393' as `0x${string}`
+const REWARD_ADDR   = '0x5E1AC781157AAF1492f15c351183EEFCa5Fbd746' as `0x${string}`
+const TOTAL_SUPPLY  = 1_350_000_000
+
+const avalanche = {
+  id: 43114, name: 'Avalanche C-Chain',
+  nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+  rpcUrls: { default: { http: [RPC_URL] } },
+} as const
+
+const MOAT_ABI = parseAbi([
+  'function getTotalAmounts() view returns (uint256 totalStaked, uint256 totalLocked, uint256 totalBurned, uint256 totalInContract)',
+  'function totalRewardPower() view returns (uint256)',
+  'function epochYield() view returns (uint256)',
+])
+
+function fromWei(wei: bigint): number {
+  return Number(wei / 10n ** 16n) / 100
+}
+
+// ── Official Founder Formula ───────────────────────────────────────────────────
+// RawPower = (S×1) + (L×ML) + (B×10)
+// MoatPoints = √(RawPower / 1 000 000 000) × MOAT_SCALAR
+//
+// Validation (all pass with one formula):
+//   piweb.bensi  — 91.5k S + 500k L@4.26× + 54.3M B  →  20,104 pts  ✓
+//   jammin.degen — 32.2M B                            →  ~15,450 pts ✓ (32.2M rounded)
+//   930k Holder  — 930k L @ 730d (5×), 73d remaining  →   1,856 pts  ✓
+const NORM_DIVISOR  = 1_000_000_000
+const MOAT_SCALAR   = 27_227
+
+// Fallback avg ML for locked tokens — only if on-chain totalRewardPower() reverts
+const LOCKED_AVG_ML = 3.759
+
+// ── Multiplier table (calibrated: 416d → 4.26× confirmed from leaderboard) ───
 type Strategy = 'stake' | 'lock' | 'burn'
 
-// Exact piecewise breakpoints from lockup data
 const BREAKPOINTS = [
   { days: 1,   mult: 2.04 },
   { days: 7,   mult: 2.11 },
@@ -15,6 +52,7 @@ const BREAKPOINTS = [
   { days: 90,  mult: 2.73 },
   { days: 180, mult: 3.23 },
   { days: 365, mult: 4.00 },
+  { days: 416, mult: 4.26 },
   { days: 730, mult: 5.00 },
 ]
 
@@ -40,53 +78,93 @@ function fmt(n: number): string {
   return n.toFixed(2)
 }
 
-const QUICK_SELECT = [7, 30, 90, 180, 365, 730]
+const QUICK_SELECT = [7, 30, 90, 180, 365, 416, 730]
 
-// ── Official Founder Formula ───────────────────────────────────────────────────
-// RawPower        = (Staked × 1) + (Locked × ML) + (Burned × 10)
-// NormalizedPower = RawPower / NORM_DIVISOR              (1 B anchor)
-// MoatPoints      = √(NormalizedPower) × MOAT_SCALAR     (calibrated)
-// Yields          = (RawPower / GLOBAL_REWARD_POWER) × pool (linear — no √)
-
-// ── Formula constants ─────────────────────────────────────────────────────────
-const NORM_DIVISOR        = 1_000_000_000   // 1 B normalisation anchor
-const MOAT_SCALAR         = 27_155          // √(548 000 000 / 1 B) × 27 155 ≈ 20 104
-const GLOBAL_REWARD_POWER = 3_942_855_424   // Ecosystem RawPower anchor (linear denominator)
-const PULSE_AVAX          = 0.577           // Fixed AVAX per pulse
-const EPOCH_POOL_AVAX     = 30.41           // Default epoch pool
-const PULSES_PER_DAY      = 4               // One pulse every 6 hours
-
-// ── Global ecosystem snapshot ─────────────────────────────────────────────────
-const TOTAL_SUPPLY   = 1_350_000_000
-const GLOBAL_STAKED  =   155_693_804   // LIL currently staked (1×)
-const GLOBAL_LOCKED  =   152_330_218   // LIL currently locked (avg 3.76×)
-const GLOBAL_BURNED  =   321_438_924   // LIL burned in Moat (10×)
-const MOAT_DENSITY   = ((GLOBAL_STAKED + GLOBAL_LOCKED + GLOBAL_BURNED) / TOTAL_SUPPLY * 100).toFixed(2)
+interface LiveData {
+  totalMoatPower: number
+  epochYield:     number
+  moatDensity:    string
+  loading:        boolean
+  error:          boolean
+}
 
 export default function MoatOptimizer() {
-  const [amount,    setAmount]    = useState('')
-  const [strategy,  setStrategy]  = useState<Strategy>('stake')
-  const [days,      setDays]      = useState(365)
-  const [epochPool, setEpochPool] = useState(EPOCH_POOL_AVAX.toString())
+  const [amount,   setAmount]   = useState('')
+  const [strategy, setStrategy] = useState<Strategy>('stake')
+  const [days,     setDays]     = useState(365)
+  const [live,     setLive]     = useState<LiveData>({
+    totalMoatPower: 0, epochYield: 0, moatDensity: '—', loading: true, error: false,
+  })
 
-  const lilAmount    = parseFloat(amount)    || 0
-  const epochPoolAmt = parseFloat(epochPool) || EPOCH_POOL_AVAX
-  const multiplier   = getMultiplier(strategy, days)
+  const fetchLive = useCallback(async () => {
+    setLive(d => ({ ...d, loading: true, error: false }))
+    try {
+      const client = createPublicClient({ chain: avalanche, transport: http(RPC_URL) })
 
-  // Official Founder Formula
-  const staked            = strategy === 'stake' ? lilAmount : 0
-  const locked            = strategy === 'lock'  ? lilAmount : 0
-  const burned            = strategy === 'burn'  ? lilAmount : 0
-  const rawPower          = (staked * 1) + (locked * multiplier) + (burned * 10)
-  const normalizedPower   = rawPower / NORM_DIVISOR
-  const moatPoints        = normalizedPower > 0 ? Math.sqrt(normalizedPower) * MOAT_SCALAR : 0
-  const rewardShare       = rawPower > 0 ? rawPower / GLOBAL_REWARD_POWER : 0
-  const dailyYield        = rewardShare * PULSE_AVAX * PULSES_PER_DAY
-  const epochYield        = rewardShare * epochPoolAmt
+      // Live global token amounts
+      const [s, l, b] = await client.readContract({
+        address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getTotalAmounts',
+      })
+      const totalStaked = fromWei(s)
+      const totalLocked = fromWei(l)
+      const totalBurned  = fromWei(b)
+      const moatDensity  = ((totalStaked + totalLocked + totalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
 
-  const hasResult = lilAmount > 0
+      // Live total reward power — fall back to weighted estimate if function absent
+      let totalMoatPower: number
+      try {
+        const tp = await client.readContract({
+          address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalRewardPower',
+        })
+        totalMoatPower = fromWei(tp)
+      } catch {
+        totalMoatPower = totalStaked + totalBurned * 10 + totalLocked * LOCKED_AVG_ML
+      }
 
-  // Slider fill (min=1, max=730)
+      // Live epoch yield — try contract function, fall back to reward address balance
+      let epochYield: number
+      try {
+        const ey = await client.readContract({
+          address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'epochYield',
+        })
+        epochYield = parseFloat(formatEther(ey))
+      } catch {
+        try {
+          const bal = await client.getBalance({ address: REWARD_ADDR })
+          epochYield = parseFloat(formatEther(bal))
+        } catch {
+          epochYield = 0
+        }
+      }
+
+      setLive({ totalMoatPower, epochYield, moatDensity, loading: false, error: false })
+    } catch {
+      setLive(d => ({ ...d, loading: false, error: true }))
+    }
+  }, [])
+
+  useEffect(() => { fetchLive() }, [fetchLive])
+
+  // ── Formula (recalculates on every slider/input change) ──────────────────────
+  const lilAmount  = parseFloat(amount) || 0
+  const multiplier = getMultiplier(strategy, days)
+
+  const staked          = strategy === 'stake' ? lilAmount : 0
+  const locked          = strategy === 'lock'  ? lilAmount : 0
+  const burned          = strategy === 'burn'  ? lilAmount : 0
+  const rawPower        = (staked * 1) + (locked * multiplier) + (burned * 10)
+  const normalizedPower = rawPower / NORM_DIVISOR
+  const moatPoints      = normalizedPower > 0 ? Math.sqrt(normalizedPower) * MOAT_SCALAR : 0
+
+  // Yield projections — live denominator, linear rawPower share
+  const userShare       = live.totalMoatPower > 0 && rawPower > 0 ? rawPower / live.totalMoatPower : 0
+  const dailyYield      = userShare * (live.epochYield / 14)
+  const epochYieldResult = userShare * live.epochYield
+
+  const hasResult   = lilAmount > 0
+  const hasLiveData = live.totalMoatPower > 0 && live.epochYield > 0
+
+  // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
   const trackBg = `linear-gradient(90deg, ${PINK} 0%, #8b5cf6 ${fillPct}%, rgba(255,255,255,0.1) ${fillPct}%)`
 
@@ -95,7 +173,6 @@ export default function MoatOptimizer() {
     'text-white text-sm font-semibold outline-none transition-colors',
     'focus:border-[#ff007a] [text-shadow:none]',
   ].join(' ')
-
   const labelCls = 'text-xs text-zinc-400 font-semibold mb-1.5 block'
 
   return (
@@ -111,11 +188,21 @@ export default function MoatOptimizer() {
         .moat-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: none; cursor: pointer; box-shadow: 0 0 15px #ff007a; }
       `}</style>
 
-      <p className="text-[10px] font-bold uppercase tracking-widest mb-5" style={{ color: PINK }}>
-        Moat Calculator
-      </p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: PINK }}>
+          Moat Calculator
+        </p>
+        <button
+          onClick={fetchLive}
+          disabled={live.loading}
+          className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 disabled:opacity-40"
+        >
+          {live.loading ? '⟳ Loading…' : live.error ? '⚠ Retry' : '⟳ Refresh'}
+        </button>
+      </div>
 
-      {/* ── Row 1: Inputs + Multiplier Table ───────────────────────────── */}
+      {/* ── Row 1: Inputs + Multiplier Table ─────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
         {/* Left — Your Position */}
@@ -152,15 +239,6 @@ export default function MoatOptimizer() {
             </div>
           </div>
 
-          <div>
-            <label className={labelCls}>Estimated Rewards (AVAX Pool)</label>
-            <input
-              type="number" min="0" step="0.01" placeholder={EPOCH_POOL_AVAX.toString()}
-              value={epochPool} onChange={e => setEpochPool(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-
           {strategy === 'lock' && (
             <div>
               <div className="flex justify-between items-baseline mb-3">
@@ -185,12 +263,37 @@ export default function MoatOptimizer() {
                       ? { backgroundColor: PINK, borderColor: PINK, color: '#fff' }
                       : { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)', color: '#71717a' }}
                   >
-                    {d >= 365 ? `${d / 365}yr` : `${d}d`}
+                    {d === 416 ? '416d' : d >= 365 ? `${d / 365}yr` : `${d}d`}
                   </button>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Live epoch data summary */}
+          <div className="bg-black/30 border border-zinc-800 rounded-xl px-3 py-2">
+            <p className="text-[10px] text-zinc-500 mb-1 uppercase tracking-wider font-semibold">Live Epoch Data</p>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11px] text-zinc-400">
+                14-day Pool:{' '}
+                <span className="text-white font-bold">
+                  {live.loading ? '…' : live.epochYield > 0 ? `${live.epochYield.toFixed(4)} AVAX` : '—'}
+                </span>
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Daily:{' '}
+                <span className="text-white font-bold">
+                  {live.loading ? '…' : live.epochYield > 0 ? `${(live.epochYield / 14).toFixed(4)} AVAX` : '—'}
+                </span>
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Per Pulse:{' '}
+                <span className="text-white font-bold">
+                  {live.loading ? '…' : live.epochYield > 0 ? `${(live.epochYield / 14 / 4).toFixed(4)} AVAX` : '—'}
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Right — Multiplier Table */}
@@ -248,32 +351,32 @@ export default function MoatOptimizer() {
 
       <div className="border-t border-zinc-800 mb-5" />
 
-      {/* ── 3-col results grid (mirrors RewardChecker layout) ────────────── */}
+      {/* ── 3-col results grid ────────────────────────────────────────────── */}
       {(() => {
         const card = 'bg-black/40 border border-zinc-800 rounded-xl px-4 py-3'
         const lbl  = 'text-[10px] text-zinc-500 font-semibold uppercase tracking-wider block mb-1'
         return (
-          <div className="grid grid-cols-3 gap-3 items-stretch mb-4">
+          <div className="grid grid-cols-3 gap-3 items-stretch">
 
             {/* Card 1 — The Projections */}
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>The Projections</span>
-              {/* Top: Daily Yield */}
               <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Daily Yield</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
-                  {hasResult ? `~${dailyYield.toFixed(4)}` : '—'}
+                  {hasResult && hasLiveData ? `~${dailyYield.toFixed(4)}` : '—'}
                 </span>
-                <span className="text-[10px] text-zinc-600 mt-0.5">$AVAX · {PULSES_PER_DAY} pulses/day</span>
+                <span className="text-[10px] text-zinc-600 mt-0.5">$AVAX · pool ÷ 14</span>
               </div>
               <div className="border-t border-zinc-800 my-2" />
-              {/* Bottom: Epoch Yield */}
               <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Epoch Yield</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
-                  {hasResult ? `~${epochYield.toFixed(4)}` : '—'}
+                  {hasResult && hasLiveData ? `~${epochYieldResult.toFixed(4)}` : '—'}
                 </span>
-                <span className="text-[10px] text-zinc-600 mt-0.5">$AVAX · {epochPoolAmt} AVAX pool</span>
+                <span className="text-[10px] text-zinc-600 mt-0.5">
+                  {hasLiveData ? `$AVAX · ${live.epochYield.toFixed(2)} pool` : '$AVAX · fetching…'}
+                </span>
               </div>
             </div>
 
@@ -292,16 +395,16 @@ export default function MoatOptimizer() {
             {/* Card 3 — Moat Vitality */}
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>Moat Vitality</span>
-              {/* Top: Global Moat Density */}
               <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
-                  {MOAT_DENSITY}%
+                  {live.loading ? '…' : `${live.moatDensity}%`}
                 </span>
-                <span className="text-[10px] text-zinc-600 mt-0.5">of supply secured</span>
+                <span className="text-[10px] text-zinc-600 mt-0.5">
+                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : 'of supply secured · live'}
+                </span>
               </div>
               <div className="border-t border-zinc-800 my-2" />
-              {/* Bottom: Avg. Multiplier */}
               <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Avg. Multiplier</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: PINK }}>
@@ -312,6 +415,7 @@ export default function MoatOptimizer() {
                 </span>
               </div>
             </div>
+
           </div>
         )
       })()}
