@@ -32,27 +32,31 @@ function fromWei(wei: bigint): number {
 // RawPower = (S×1) + (L×ML) + (B×10)
 // MoatPoints = √(RawPower / 1 000 000 000) × MOAT_SCALAR
 //
-// Validation (all pass with one formula, scalar=27218):
-//   930k Holder      — 930k L @ 730d (5×)   →   1,856 pts  ✓
-//   0x2cb… (22.65M B)                        →  12,954 pts  ✓
-//   0x5d4… (48M B)                           →  18,857 pts  ✓
+// Scalar solved from control benchmarks (both pure-burn, no ML ambiguity):
+//   vroshi55 (361,465 B)  →  1,637 pts  ✓
+//   0x2cb…  (22.65M B)   → 12,954 pts  ✓
+// Verification (within 5% margin):
+//   930k Holder @ 730d (74d remaining, ML=5×) → 1,856 pts  ✓
 const NORM_DIVISOR  = 1_000_000_000
-const MOAT_SCALAR   = 27_218
+const MOAT_SCALAR   = 27_220
 
 // Fallback avg ML for locked tokens — only if on-chain totalRewardPower() reverts
 const LOCKED_AVG_ML = 3.759
 
-// ── Multiplier table (calibrated: 416d → 4.26× confirmed from leaderboard) ───
+// ── Multiplier table (spec-defined breakpoints, linear interpolation) ─────────
 type Strategy = 'stake' | 'lock' | 'burn'
 
 const BREAKPOINTS = [
   { days: 1,   mult: 2.04 },
   { days: 7,   mult: 2.11 },
   { days: 30,  mult: 2.31 },
+  { days: 60,  mult: 2.52 },
   { days: 90,  mult: 2.73 },
+  { days: 120, mult: 2.91 },
   { days: 180, mult: 3.23 },
+  { days: 240, mult: 3.52 },
   { days: 365, mult: 4.00 },
-  { days: 416, mult: 4.26 },
+  { days: 450, mult: 4.31 },
   { days: 730, mult: 5.00 },
 ]
 
@@ -78,7 +82,7 @@ function fmt(n: number): string {
   return n.toFixed(2)
 }
 
-const QUICK_SELECT = [7, 30, 90, 180, 365, 416, 730]
+const QUICK_SELECT = [7, 30, 60, 90, 120, 180, 240, 365, 450, 730]
 
 interface LiveData {
   totalMoatPower: number
@@ -263,7 +267,7 @@ export default function MoatOptimizer() {
                       ? { backgroundColor: PINK, borderColor: PINK, color: '#fff' }
                       : { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)', color: '#71717a' }}
                   >
-                    {d === 416 ? '416d' : d >= 365 ? `${d / 365}yr` : `${d}d`}
+                    {d === 730 ? '2yr' : d === 365 ? '1yr' : `${d}d`}
                   </button>
                 ))}
               </div>
