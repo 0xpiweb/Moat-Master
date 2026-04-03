@@ -28,17 +28,16 @@ function fromWei(wei: bigint): number {
   return Number(wei / 10n ** 16n) / 100
 }
 
-// ── Official Founder Formula ───────────────────────────────────────────────────
-// RawPower = (S×1) + (L×ML) + (B×10)
-// MoatPoints = √(RawPower / 1 000 000 000) × MOAT_SCALAR
+// ── Official Moat Formula (API-derived, dynamic denominator) ──────────────────
+// RawPower  = (S×1) + (L×ML) + (B×10)
+// UserWeight = √(RawPower / totalRewardPower())        ← on-chain total pool power
+// MoatPoints = UserWeight × MOAT_SCALAR                ← constant ratio = 2888
 //
-// Scalar solved from control benchmarks (both pure-burn, no ML ambiguity):
-//   vroshi55 (361,465 B)  →  1,637 pts  ✓
-//   0x2cb…  (22.65M B)   → 12,954 pts  ✓
-// Verification (within 5% margin):
-//   930k Holder @ 730d (74d remaining, ML=5×) → 1,856 pts  ✓
-const NORM_DIVISOR  = 1_000_000_000
-const MOAT_SCALAR   = 27_220
+// Verification (pool ≈ 11.25M at snapshot time):
+//   vroshi55 (361,465 B)   →  1,637 pts  ✓ exact
+//   0x2cb…  (22.65M B)    → 12,954 pts  ✓ exact
+//   930k @ 730d (ML=5×)   →  1,856 pts  ✓ exact
+const MOAT_SCALAR = 2_888        // constant: UserPoints / UserWeight from leaderboard
 
 // Fallback avg ML for locked tokens — only if on-chain totalRewardPower() reverts
 const LOCKED_AVG_ML = 3.759
@@ -156,13 +155,16 @@ export default function MoatOptimizer() {
   const staked          = strategy === 'stake' ? lilAmount : 0
   const locked          = strategy === 'lock'  ? lilAmount : 0
   const burned          = strategy === 'burn'  ? lilAmount : 0
-  const rawPower        = (staked * 1) + (locked * multiplier) + (burned * 10)
-  const normalizedPower = rawPower / NORM_DIVISOR
-  const moatPoints      = normalizedPower > 0 ? Math.sqrt(normalizedPower) * MOAT_SCALAR : 0
+  const rawPower = (staked * 1) + (locked * multiplier) + (burned * 10)
 
-  // Yield projections — live denominator, linear rawPower share
-  const userShare       = live.totalMoatPower > 0 && rawPower > 0 ? rawPower / live.totalMoatPower : 0
-  const dailyYield      = userShare * (live.epochYield / 14)
+  // MoatPoints = √(rawPower / totalRewardPower) × 2888  — denominator is live pool size
+  const moatPoints = live.totalMoatPower > 0 && rawPower > 0
+    ? Math.sqrt(rawPower / live.totalMoatPower) * MOAT_SCALAR
+    : 0
+
+  // Yield — strictly linear share of raw power
+  const userShare        = live.totalMoatPower > 0 && rawPower > 0 ? rawPower / live.totalMoatPower : 0
+  const dailyYield       = userShare * (live.epochYield / 14)
   const epochYieldResult = userShare * live.epochYield
 
   const hasResult   = lilAmount > 0
@@ -367,9 +369,13 @@ export default function MoatOptimizer() {
             >
               <span className={lbl + ' justify-center'}>Total Moat Points</span>
               <span className="text-4xl font-black [text-shadow:none] leading-none mt-2" style={{ color: '#22d3ee' }}>
-                {hasResult ? Math.round(moatPoints).toLocaleString('en-US') : '—'}
+                {hasResult && live.totalMoatPower > 0
+                  ? Math.round(moatPoints).toLocaleString('en-US')
+                  : hasResult && live.loading ? '…' : '—'}
               </span>
-              {hasResult && <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>}
+              {hasResult && live.totalMoatPower > 0 && (
+                <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>
+              )}
             </div>
 
             {/* Card 3 — Moat Vitality */}
