@@ -29,17 +29,22 @@ function fromWei(wei: bigint): number {
   return Number(wei / 10n ** 16n) / 100
 }
 
-// ── Official Moat Formula (per fortifi.gitbook.io/moats) ──────────────────────
-// RawPower  = (Staked × 1) + (Locked × ML) + (Burned × 10)
+// ── Official Moat Formula (per fortifi.gitbook.io/moats + founder clarification) ─
+// RawPower (display)  = (Staked × 1) + (Locked × 5) + (Burned × 10)
 // MoatPoints = √(RawPower / 1,000,000,000) × MOAT_SCALAR
 //
-// Normalization: divide by 1 B supply (fixed, not pool-size dependent).
-// MOAT_SCALAR calibrated from pure-burn control benchmarks (no ML ambiguity):
-//   vroshi55  (361,465 B)  →  1,637 pts  ✓ exact
-//   0x2cb…   (22.65M B)   → ~12,954 pts ✓ (1-pt rounding; "22.65M" is approximate)
-//   930k@730d (ML = 5×)   →  1,856 pts  ✓ exact
+// CRITICAL: locked tokens always use the FIXED max multiplier (5×) for MoatPoints,
+// regardless of lock duration. The duration-based ML (e.g. 2.62× for 74d) applies
+// ONLY to reward distribution share — not to the leaderboard points formula.
+// This is intentional: "makes the spread feel smaller" (founder).
+//
+// MOAT_SCALAR calibrated from confirmed benchmarks:
+//   vroshi55  (361,465 B)         →  1,637 pts ✓ exact
+//   930k locked (any duration)    →  1,856 pts ✓ (locked × 5, not × ML)
+//   piweb.bensi (91.6k S + 500k L + 54.3M B) → 20,104 pts ✓ exact
 const NORM_1B     = 1_000_000_000
 const MOAT_SCALAR = 27_220
+const LOCK_MULT   = 5   // fixed lock multiplier for MoatPoints (duration affects rewards only)
 
 // ── Multiplier table — all 16 official breakpoints (linear interpolation) ─────
 type Strategy = 'stake' | 'lock' | 'burn'
@@ -140,14 +145,17 @@ export default function MoatOptimizer() {
   const staked   = strategy === 'stake' ? lilAmount : 0
   const locked   = strategy === 'lock'  ? lilAmount : 0
   const burned   = strategy === 'burn'  ? lilAmount : 0
-  const rawPower = (staked * 1) + (locked * multiplier) + (burned * 10)
+  // MoatPoints: locked always × 5 (fixed, duration-independent)
+  const rawPower = (staked * 1) + (locked * LOCK_MULT) + (burned * 10)
+  // Reward share: locked × ML (duration-based — longer lock = higher share)
+  const rawPowerRewards = (staked * 1) + (locked * multiplier) + (burned * 10)
 
   // MoatPoints = √(RawPower / 1B) × MOAT_SCALAR  (1B normalization, per docs)
   const moatPoints = rawPower > 0 ? Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR : 0
 
-  // Reward share = √(userRawPower) / Σ(√rawPower_i)  [per docs: userPts / totalPts]
+  // Reward share = √(userRawPower_rewards) / Σ(√rawPower_i)
   // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_tokens_i) across all users
-  const userSqrt  = rawPower > 0 ? Math.sqrt(rawPower) : 0
+  const userSqrt  = rawPowerRewards > 0 ? Math.sqrt(rawPowerRewards) : 0
   const userShare = live.sqrtSumScaled > 0 && userSqrt > 0
     ? userSqrt / live.sqrtSumScaled : 0
   const dailyYield       = userShare * (live.epochYield / 14)
@@ -374,7 +382,7 @@ export default function MoatOptimizer() {
               </div>
               <div className="border-t border-zinc-800 my-2" />
               <div className="flex flex-col justify-center flex-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Avg. Multiplier</p>
+                <p className="text-[10px] text-zinc-500 mb-1">Reward Multiplier</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: PINK }}>
                   {multiplier.toFixed(2)}×
                 </span>
