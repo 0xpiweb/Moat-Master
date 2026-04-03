@@ -19,30 +19,29 @@ const avalanche = {
 } as const
 
 const MOAT_ABI = parseAbi([
+  // Returns total staked / locked / burned / in-contract (all in wei)
   'function getTotalAmounts() view returns (uint256 totalStaked, uint256 totalLocked, uint256 totalBurned, uint256 totalInContract)',
-  'function totalRewardPower() view returns (uint256)',
-  'function epochYield() view returns (uint256)',
+  // Returns Σ(sqrt(userRawPower_wei)) across all users — used for reward-share denominator
+  'function totalPoints() view returns (uint256)',
 ])
 
 function fromWei(wei: bigint): number {
   return Number(wei / 10n ** 16n) / 100
 }
 
-// ── Official Moat Formula (API-derived, dynamic denominator) ──────────────────
-// RawPower  = (S×1) + (L×ML) + (B×10)
-// UserWeight = √(RawPower / totalRewardPower())        ← on-chain total pool power
-// MoatPoints = UserWeight × MOAT_SCALAR                ← constant ratio = 2888
+// ── Official Moat Formula (per fortifi.gitbook.io/moats) ──────────────────────
+// RawPower  = (Staked × 1) + (Locked × ML) + (Burned × 10)
+// MoatPoints = √(RawPower / 1,000,000,000) × MOAT_SCALAR
 //
-// Verification (pool ≈ 11.25M at snapshot time):
-//   vroshi55 (361,465 B)   →  1,637 pts  ✓ exact
-//   0x2cb…  (22.65M B)    → 12,954 pts  ✓ exact
-//   930k @ 730d (ML=5×)   →  1,856 pts  ✓ exact
-const MOAT_SCALAR = 2_888        // constant: UserPoints / UserWeight from leaderboard
+// Normalization: divide by 1 B supply (fixed, not pool-size dependent).
+// MOAT_SCALAR calibrated from pure-burn control benchmarks (no ML ambiguity):
+//   vroshi55  (361,465 B)  →  1,637 pts  ✓ exact
+//   0x2cb…   (22.65M B)   → ~12,954 pts ✓ (1-pt rounding; "22.65M" is approximate)
+//   930k@730d (ML = 5×)   →  1,856 pts  ✓ exact
+const NORM_1B     = 1_000_000_000
+const MOAT_SCALAR = 27_220
 
-// Fallback avg ML for locked tokens — only if on-chain totalRewardPower() reverts
-const LOCKED_AVG_ML = 3.759
-
-// ── Multiplier table (spec-defined breakpoints, linear interpolation) ─────────
+// ── Multiplier table — all 16 official breakpoints (linear interpolation) ─────
 type Strategy = 'stake' | 'lock' | 'burn'
 
 const BREAKPOINTS = [
@@ -56,6 +55,11 @@ const BREAKPOINTS = [
   { days: 240, mult: 3.52 },
   { days: 365, mult: 4.00 },
   { days: 450, mult: 4.31 },
+  { days: 540, mult: 4.57 },
+  { days: 600, mult: 4.73 },
+  { days: 660, mult: 4.87 },
+  { days: 700, mult: 4.95 },
+  { days: 729, mult: 4.99 },
   { days: 730, mult: 5.00 },
 ]
 
@@ -74,21 +78,15 @@ function getMultiplier(strategy: Strategy, days: number): number {
   return BREAKPOINTS[0].mult
 }
 
-function fmt(n: number): string {
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B'
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
-  if (n >= 1e3) return Math.round(n).toLocaleString('en-US')
-  return n.toFixed(2)
-}
-
-const QUICK_SELECT = [7, 30, 60, 90, 120, 180, 240, 365, 450, 730]
+// Key quick-select durations (subset of official breakpoints)
+const QUICK_SELECT = [7, 30, 90, 180, 365, 450, 540, 660, 730]
 
 interface LiveData {
-  totalMoatPower: number
-  epochYield:     number
-  moatDensity:    string
-  loading:        boolean
-  error:          boolean
+  sqrtSumScaled: number   // totalPoints() / 1e9 = Σ(√rawPower_tokens) across all users
+  epochYield:    number   // AVAX in reward pool (from reward address balance)
+  moatDensity:   string
+  loading:       boolean
+  error:         boolean
 }
 
 export default function MoatOptimizer() {
@@ -96,7 +94,7 @@ export default function MoatOptimizer() {
   const [strategy, setStrategy] = useState<Strategy>('stake')
   const [days,     setDays]     = useState(365)
   const [live,     setLive]     = useState<LiveData>({
-    totalMoatPower: 0, epochYield: 0, moatDensity: '—', loading: true, error: false,
+    sqrtSumScaled: 0, epochYield: 0, moatDensity: '—', loading: true, error: false,
   })
 
   const fetchLive = useCallback(async () => {
@@ -104,43 +102,30 @@ export default function MoatOptimizer() {
     try {
       const client = createPublicClient({ chain: avalanche, transport: http(RPC_URL) })
 
-      // Live global token amounts
+      // Global token amounts (for density display)
       const [s, l, b] = await client.readContract({
         address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getTotalAmounts',
       })
       const totalStaked = fromWei(s)
       const totalLocked = fromWei(l)
-      const totalBurned  = fromWei(b)
-      const moatDensity  = ((totalStaked + totalLocked + totalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
+      const totalBurned = fromWei(b)
+      const moatDensity = ((totalStaked + totalLocked + totalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
 
-      // Live total reward power — fall back to weighted estimate if function absent
-      let totalMoatPower: number
+      // totalPoints() = Σ(√(userRawPower_wei)) across all users
+      // Dividing by 1e9 gives Σ(√rawPower_tokens) — the correct reward-share denominator
+      const tp = await client.readContract({
+        address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',
+      })
+      const sqrtSumScaled = Number(tp) / 1e9
+
+      // Epoch yield — reward address balance (contract has no epochYield() function)
+      let epochYield = 0
       try {
-        const tp = await client.readContract({
-          address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalRewardPower',
-        })
-        totalMoatPower = fromWei(tp)
-      } catch {
-        totalMoatPower = totalStaked + totalBurned * 10 + totalLocked * LOCKED_AVG_ML
-      }
+        const bal = await client.getBalance({ address: REWARD_ADDR })
+        epochYield = parseFloat(formatEther(bal))
+      } catch { /* keep 0 */ }
 
-      // Live epoch yield — try contract function, fall back to reward address balance
-      let epochYield: number
-      try {
-        const ey = await client.readContract({
-          address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'epochYield',
-        })
-        epochYield = parseFloat(formatEther(ey))
-      } catch {
-        try {
-          const bal = await client.getBalance({ address: REWARD_ADDR })
-          epochYield = parseFloat(formatEther(bal))
-        } catch {
-          epochYield = 0
-        }
-      }
-
-      setLive({ totalMoatPower, epochYield, moatDensity, loading: false, error: false })
+      setLive({ sqrtSumScaled, epochYield, moatDensity, loading: false, error: false })
     } catch {
       setLive(d => ({ ...d, loading: false, error: true }))
     }
@@ -148,27 +133,28 @@ export default function MoatOptimizer() {
 
   useEffect(() => { fetchLive() }, [fetchLive])
 
-  // ── Formula (recalculates on every slider/input change) ──────────────────────
+  // ── Formula ──────────────────────────────────────────────────────────────────
   const lilAmount  = parseFloat(amount) || 0
   const multiplier = getMultiplier(strategy, days)
 
-  const staked          = strategy === 'stake' ? lilAmount : 0
-  const locked          = strategy === 'lock'  ? lilAmount : 0
-  const burned          = strategy === 'burn'  ? lilAmount : 0
+  const staked   = strategy === 'stake' ? lilAmount : 0
+  const locked   = strategy === 'lock'  ? lilAmount : 0
+  const burned   = strategy === 'burn'  ? lilAmount : 0
   const rawPower = (staked * 1) + (locked * multiplier) + (burned * 10)
 
-  // MoatPoints = √(rawPower / totalRewardPower) × 2888  — denominator is live pool size
-  const moatPoints = live.totalMoatPower > 0 && rawPower > 0
-    ? Math.sqrt(rawPower / live.totalMoatPower) * MOAT_SCALAR
-    : 0
+  // MoatPoints = √(RawPower / 1B) × MOAT_SCALAR  (1B normalization, per docs)
+  const moatPoints = rawPower > 0 ? Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR : 0
 
-  // Yield — strictly linear share of raw power
-  const userShare        = live.totalMoatPower > 0 && rawPower > 0 ? rawPower / live.totalMoatPower : 0
+  // Reward share = √(userRawPower) / Σ(√rawPower_i)  [per docs: userPts / totalPts]
+  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_tokens_i) across all users
+  const userSqrt  = rawPower > 0 ? Math.sqrt(rawPower) : 0
+  const userShare = live.sqrtSumScaled > 0 && userSqrt > 0
+    ? userSqrt / live.sqrtSumScaled : 0
   const dailyYield       = userShare * (live.epochYield / 14)
   const epochYieldResult = userShare * live.epochYield
 
   const hasResult   = lilAmount > 0
-  const hasLiveData = live.totalMoatPower > 0 && live.epochYield > 0
+  const hasLiveData = live.sqrtSumScaled > 0 && live.epochYield > 0
 
   // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
@@ -340,9 +326,9 @@ export default function MoatOptimizer() {
         return (
           <div className="grid grid-cols-3 gap-3 items-stretch">
 
-            {/* Card 1 — The Projections */}
+            {/* Card 1 — Estimated Rewards */}
             <div className={card + ' flex flex-col'}>
-              <span className={lbl}>The Projections</span>
+              <span className={lbl}>Est. Rewards</span>
               <div className="flex flex-col justify-center flex-1">
                 <p className="text-[10px] text-zinc-500 mb-1">Daily Yield</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
@@ -362,20 +348,16 @@ export default function MoatOptimizer() {
               </div>
             </div>
 
-            {/* Card 2 — The Hero: Total Moat Points */}
+            {/* Card 2 — Total Moat Points (hero) */}
             <div
               className="rounded-xl px-5 py-5 border flex flex-col items-center justify-center text-center"
               style={{ backgroundColor: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.4)', boxShadow: hasResult ? '0 0 20px rgba(34,211,238,0.08)' : undefined }}
             >
               <span className={lbl + ' justify-center'}>Total Moat Points</span>
               <span className="text-4xl font-black [text-shadow:none] leading-none mt-2" style={{ color: '#22d3ee' }}>
-                {hasResult && live.totalMoatPower > 0
-                  ? Math.round(moatPoints).toLocaleString('en-US')
-                  : hasResult && live.loading ? '…' : '—'}
+                {hasResult ? Math.round(moatPoints).toLocaleString('en-US') : '—'}
               </span>
-              {hasResult && live.totalMoatPower > 0 && (
-                <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>
-              )}
+              {hasResult && <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>}
             </div>
 
             {/* Card 3 — Moat Vitality */}
