@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createPublicClient, http, parseAbi, formatEther } from 'viem'
+import { createPublicClient, http, parseAbi } from 'viem'
 
 const PINK     = '#ff007a'
 const PINK_RGB = '255,0,122'
@@ -88,18 +88,19 @@ const QUICK_SELECT = [7, 30, 90, 180, 365, 450, 540, 660, 730]
 
 interface LiveData {
   sqrtSumScaled: number   // totalPoints() / 1e9 = Σ(√rawPower_tokens) across all users
-  epochYield:    number   // AVAX in reward pool (from reward address balance)
   moatDensity:   string
   loading:       boolean
   error:         boolean
 }
 
 export default function MoatOptimizer() {
-  const [amount,   setAmount]   = useState('')
-  const [strategy, setStrategy] = useState<Strategy>('stake')
-  const [days,     setDays]     = useState(365)
-  const [live,     setLive]     = useState<LiveData>({
-    sqrtSumScaled: 0, epochYield: 0, moatDensity: '—', loading: true, error: false,
+  const [amount,       setAmount]       = useState('')
+  const [strategy,     setStrategy]     = useState<Strategy>('stake')
+  const [days,         setDays]         = useState(365)
+  const [epochRewards, setEpochRewards] = useState(30.41)
+  const [epochInput,   setEpochInput]   = useState('30.41')
+  const [live,         setLive]         = useState<LiveData>({
+    sqrtSumScaled: 0, moatDensity: '—', loading: true, error: false,
   })
 
   const fetchLive = useCallback(async () => {
@@ -123,20 +124,24 @@ export default function MoatOptimizer() {
       })
       const sqrtSumScaled = Number(tp) / 1e9
 
-      // Epoch yield — reward address balance (contract has no epochYield() function)
-      let epochYield = 0
-      try {
-        const bal = await client.getBalance({ address: REWARD_ADDR })
-        epochYield = parseFloat(formatEther(bal))
-      } catch { /* keep 0 */ }
-
-      setLive({ sqrtSumScaled, epochYield, moatDensity, loading: false, error: false })
+      setLive({ sqrtSumScaled, moatDensity, loading: false, error: false })
     } catch {
       setLive(d => ({ ...d, loading: false, error: true }))
     }
   }, [])
 
-  useEffect(() => { fetchLive() }, [fetchLive])
+  const fetchDeposit = useCallback(async () => {
+    try {
+      const res  = await fetch('/api/last-deposit')
+      const { avax } = await res.json() as { avax: number }
+      if (avax > 0) {
+        setEpochRewards(avax)
+        setEpochInput(avax.toFixed(4))
+      }
+    } catch { /* keep default 30.41 */ }
+  }, [])
+
+  useEffect(() => { fetchLive(); fetchDeposit() }, [fetchLive, fetchDeposit])
 
   // ── Formula ──────────────────────────────────────────────────────────────────
   const lilAmount  = parseFloat(amount) || 0
@@ -157,11 +162,11 @@ export default function MoatOptimizer() {
   const userSqrt  = rawPower > 0 ? Math.sqrt(rawPower) * multiplier : 0
   const userShare = live.sqrtSumScaled > 0 && userSqrt > 0
     ? userSqrt / live.sqrtSumScaled : 0
-  const dailyYield       = userShare * (live.epochYield / 14)
-  const epochYieldResult = userShare * live.epochYield
+  const epochYieldResult = userShare * epochRewards
+  const dailyYield       = epochYieldResult / 14
 
   const hasResult   = lilAmount > 0
-  const hasLiveData = live.sqrtSumScaled > 0 && live.epochYield > 0
+  const hasLiveData = live.sqrtSumScaled > 0 && epochRewards > 0
 
   // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
@@ -269,6 +274,29 @@ export default function MoatOptimizer() {
             </div>
           )}
 
+          {/* Estimated Epoch Rewards — auto-fetched from last deposit, user-editable */}
+          <div className="mt-auto pt-2">
+            <label className={labelCls}>Estimated Epoch Rewards</label>
+            <div className="relative">
+              <input
+                type="number" min="0" step="0.01"
+                value={epochInput}
+                onChange={e => {
+                  setEpochInput(e.target.value)
+                  const v = parseFloat(e.target.value)
+                  if (!isNaN(v) && v >= 0) setEpochRewards(v)
+                }}
+                className={inputCls + ' pr-16'}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500 pointer-events-none">
+                AVAX
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-600 mt-1.5">
+              {live.loading ? 'Fetching last deposit…' : 'Last bi-weekly deposit · editable'}
+            </p>
+          </div>
+
         </div>
 
         {/* Right — Multiplier Table */}
@@ -372,7 +400,7 @@ export default function MoatOptimizer() {
                   {hasResult && hasLiveData ? `~${epochYieldResult.toFixed(4)}` : '—'}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {hasLiveData ? `$AVAX · ${live.epochYield.toFixed(2)} pool` : '$AVAX · fetching…'}
+                  {`$AVAX · ${epochRewards.toFixed(2)} epoch`}
                 </span>
               </div>
             </div>
