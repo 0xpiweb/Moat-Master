@@ -100,7 +100,7 @@ export default function MoatOptimizer() {
   const [strategy,     setStrategy]     = useState<Strategy>('stake')
   const [days,         setDays]         = useState(365)
   const [epochRewards, setEpochRewards] = useState(30.41)
-  const [epochInput,   setEpochInput]   = useState('30.41')
+  const [epochInput,   setEpochInput]   = useState('30.41')   // 2 dp — updated only on real chain fetch
   const [live,         setLive]         = useState<LiveData>({
     sqrtSumScaled: 0, globalMoatPoints: 0, globalAvgMult: 0, moatDensity: '—', loading: true, error: false,
   })
@@ -147,12 +147,13 @@ export default function MoatOptimizer() {
   const fetchDeposit = useCallback(async () => {
     try {
       const res  = await fetch('/api/last-deposit')
-      const { avax } = await res.json() as { avax: number }
-      if (avax > 0) {
+      const { avax, source } = await res.json() as { avax: number; source: string }
+      // Only update the field when we got a real on-chain deposit — never overwrite with the fallback
+      if (source === 'chain' && avax > 0) {
         setEpochRewards(avax)
-        setEpochInput(avax.toFixed(4))
+        setEpochInput(avax.toFixed(2))
       }
-    } catch { /* keep default 30.41 */ }
+    } catch { /* keep default */ }
   }, [])
 
   useEffect(() => { fetchLive(); fetchDeposit() }, [fetchLive, fetchDeposit])
@@ -421,7 +422,7 @@ export default function MoatOptimizer() {
                   {hasResult && hasLiveData ? `~${epochYieldResult.toFixed(4)}` : '—'}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {`$AVAX · ${epochRewards.toFixed(2)} epoch`}
+                  {`$AVAX · ${epochRewards.toFixed(2)} epoch pool`}
                 </span>
               </div>
             </div>

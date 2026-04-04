@@ -33,10 +33,10 @@ export async function GET() {
   try {
     for (const action of ['txlist', 'txlistinternal'] as const) {
       const avax = await findEpochDeposit(action)
-      if (avax !== null && avax > 0) return NextResponse.json({ avax })
+      if (avax !== null && avax > 0) return NextResponse.json({ avax, source: 'chain' })
     }
-    return NextResponse.json({ avax: FALLBACK })
+    return NextResponse.json({ avax: FALLBACK, source: 'fallback' })
   } catch {
-    return NextResponse.json({ avax: FALLBACK })
+    return NextResponse.json({ avax: FALLBACK, source: 'fallback' })
   }
 }
