@@ -442,26 +442,22 @@ export default function MoatOptimizer() {
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>Moat Vitality</span>
               <div className="flex flex-col justify-center flex-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Global Pool Weight</p>
-                <span className="text-lg font-black [text-shadow:none] leading-tight text-white">
-                  {live.loading ? '…' : live.sqrtSumScaled > 0
-                    ? live.sqrtSumScaled.toLocaleString('en-US', { maximumFractionDigits: 0 })
-                    : '—'}
+                <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
+                <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
+                  {live.loading ? '…' : `${live.moatDensity}%`}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : `${live.globalAvgMult > 0 ? `~${live.globalAvgMult.toFixed(2)}× avg mult · ` : ''}live denominator`}
+                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : 'of supply secured · live'}
                 </span>
               </div>
               <div className="border-t border-zinc-800 my-2" />
               <div className="flex flex-col justify-center flex-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Moat Density · Your Mult</p>
-                <span className="text-lg font-black [text-shadow:none] leading-tight text-white">
-                  {live.loading ? '…' : `${live.moatDensity}%`}
-                  <span className="text-[10px] text-zinc-500 font-semibold ml-2">·</span>
-                  <span className="ml-2" style={{ color: PINK }}>{multiplier.toFixed(2)}×</span>
+                <p className="text-[10px] text-zinc-500 mb-1">Reward Multiplier</p>
+                <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: PINK }}>
+                  {multiplier.toFixed(2)}×
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {live.loading ? '…' : `supply in moat · ${strategy === 'stake' ? 'stake rate' : strategy === 'burn' ? 'burn rate' : `${days}d lock`}`}
+                  {strategy === 'stake' ? 'base stake rate' : strategy === 'burn' ? 'max burn rate' : `${days}d lock`}
                 </span>
               </div>
             </div>
