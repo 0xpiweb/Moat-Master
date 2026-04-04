@@ -96,9 +96,10 @@ interface LiveData {
 }
 
 export default function MoatOptimizer() {
-  const [amount,       setAmount]       = useState('')
-  const [strategy,     setStrategy]     = useState<Strategy>('stake')
-  const [days,         setDays]         = useState(365)
+  const [stakeAmount, setStakeAmount] = useState('')
+  const [lockAmount,  setLockAmount]  = useState('')
+  const [burnAmount,  setBurnAmount]  = useState('')
+  const [days,        setDays]        = useState(365)
   const [epochRewards, setEpochRewards] = useState(30.41)
   const [epochInput,   setEpochInput]   = useState('30.41')   // 2 dp — updated only on real chain fetch
   const [live,         setLive]         = useState<LiveData>({
@@ -159,35 +160,37 @@ export default function MoatOptimizer() {
   useEffect(() => { fetchLive(); fetchDeposit() }, [fetchLive, fetchDeposit])
 
   // ── Formula ──────────────────────────────────────────────────────────────────
-  const lilAmount  = parseFloat(amount) || 0
-  const multiplier = getMultiplier(strategy, days)
+  const stake = parseFloat(stakeAmount) || 0
+  const lock  = parseFloat(lockAmount)  || 0
+  const burn  = parseFloat(burnAmount)  || 0
 
-  const staked   = strategy === 'stake' ? lilAmount : 0
-  const locked   = strategy === 'lock'  ? lilAmount : 0
-  const burned   = strategy === 'burn'  ? lilAmount : 0
-  // MoatPoints: locked always × 5 (fixed, duration-independent)
-  const rawPower = (staked * 1) + (locked * LOCK_MULT) + (burned * 10)
+  // Lock reward multiplier — determined by slider (2.04× – 5.00×)
+  const lockMult = getMultiplier('lock', days)
 
-  // MoatPoints = √(RawPower / 1B) × MOAT_SCALAR  (1B normalization, per docs)
-  const moatPoints = rawPower > 0 ? Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR : 0
+  // Moat Points: fixed multipliers regardless of lock duration
+  //   Stake × 1 · Lock × 5 (always fixed) · Burn × 10
+  const stakePoints = stake * 1
+  const lockPoints  = lock  * LOCK_MULT   // always 5×
+  const burnPoints  = burn  * 10
+  const totalMoatPoints = stakePoints + lockPoints + burnPoints
 
-  // User Share = (User Moat Points × User Avg Multiplier) / (Total Global Reward Weight)
-  //
-  // Total Global Reward Weight = Σ(MoatPoints_i × mult_i)
-  //   = MOAT_SCALAR/√NORM_1B × Σ(√rawPower_i × mult_i)
-  //   = MOAT_SCALAR/√NORM_1B × sqrtSumScaled
-  //
-  // SCALAR/√1B cancels in the ratio, so the simplified form is:
-  //   userShare = (√rawPower × mult) / Σ(√rawPower_i × mult_i) = userSqrt / sqrtSumScaled
-  //
-  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_i × mult_i) — fetched live from contract
-  const userSqrt  = rawPower > 0 ? Math.sqrt(rawPower) * multiplier : 0
-  const userShare = live.sqrtSumScaled > 0 && userSqrt > 0
-    ? userSqrt / live.sqrtSumScaled : 0
+  // Weighted average reward multiplier across all strategy amounts
+  const totalTokens = stake + lock + burn
+  const userAvgMult = totalTokens > 0
+    ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
+    : 0
+
+  // User Earning Power = Total Moat Points × User Avg Multiplier
+  const userEarningPower = totalMoatPoints * userAvgMult
+
+  // User Share = Earning Power / Total Global Weight (live from contract)
+  const userShare = live.sqrtSumScaled > 0 && userEarningPower > 0
+    ? userEarningPower / live.sqrtSumScaled : 0
+
   const epochYieldResult = userShare * epochRewards
   const dailyYield       = epochYieldResult / 14
 
-  const hasResult   = lilAmount > 0
+  const hasResult   = totalMoatPoints > 0
   const hasLiveData = live.sqrtSumScaled > 0 && epochRewards > 0
 
   // Slider gradient
@@ -231,46 +234,50 @@ export default function MoatOptimizer() {
       {/* ── Row 1: Inputs + Multiplier Table ─────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-        {/* Left — Your Position */}
+        {/* Left — Build Your Strategy */}
         <div className="flex flex-col gap-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Your Position</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Build Your Strategy</p>
 
-          <div>
-            <label className={labelCls}>$LIL Balance</label>
-            <input
-              type="number" min="0" placeholder="Enter amount…"
-              value={amount} onChange={e => setAmount(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <label className={labelCls}>Strategy</label>
-            <div className="flex gap-2">
-              {(['stake', 'lock', 'burn'] as Strategy[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStrategy(s)}
-                  className="flex-1 py-3 rounded-xl text-xs font-bold border transition-all hover:scale-105 inline-flex items-center justify-center gap-2 [text-shadow:none] [box-sizing:border-box]"
-                  style={strategy === s
-                    ? { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.8)', color: '#fff', boxShadow: '0 0 10px rgba(255,0,122,0.35)' }
-                    : { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,0,122,0.3)', color: '#fff' }}
-                >
-                  <span className="text-[10px] leading-none">
-                    {s === 'stake' ? '🏛️' : s === 'lock' ? '🔐' : '🔥'}
-                  </span>
-                  <span>{s === 'stake' ? 'Stake' : s === 'lock' ? 'Lock' : 'Burn'}</span>
-                </button>
-              ))}
+          {/* Stake row */}
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-2 items-center">
+              <div
+                className="flex-shrink-0 w-[88px] py-2.5 rounded-xl text-xs font-bold border inline-flex items-center justify-center gap-1.5 [text-shadow:none]"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(34,211,238,0.4)', color: '#67e8f9' }}
+              >
+                🏛️ Stake
+              </div>
+              <input
+                type="number" min="0" placeholder="Enter amount…"
+                value={stakeAmount} onChange={e => setStakeAmount(e.target.value)}
+                className={inputCls}
+              />
             </div>
+            <p className="text-[10px] text-zinc-600 pl-[96px]">1× points · 1× reward mult</p>
           </div>
 
-          {strategy === 'lock' && (
-            <div>
-              <div className="flex justify-between items-baseline mb-3">
+          {/* Lock row + slider */}
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-2 items-center">
+              <div
+                className="flex-shrink-0 w-[88px] py-2.5 rounded-xl text-xs font-bold border inline-flex items-center justify-center gap-1.5 [text-shadow:none]"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }}
+              >
+                🔐 Lock
+              </div>
+              <input
+                type="number" min="0" placeholder="Enter amount…"
+                value={lockAmount} onChange={e => setLockAmount(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <p className="text-[10px] text-zinc-600 pl-[96px]">5× points (fixed) · <span style={{ color: PINK }}>{lockMult.toFixed(2)}×</span> reward mult</p>
+            {/* Lock duration slider — always visible */}
+            <div className="mt-2 pl-[96px]">
+              <div className="flex justify-between items-baseline mb-2">
                 <label className={labelCls + ' mb-0'}>Lock Duration</label>
                 <span className="text-sm font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.01em' }}>
-                  {days}d&nbsp;·&nbsp;<span style={{ color: PINK }}>{multiplier.toFixed(2)}×</span>
+                  {days}d&nbsp;·&nbsp;<span style={{ color: PINK }}>{lockMult.toFixed(2)}×</span>
                 </span>
               </div>
               <input
@@ -279,7 +286,7 @@ export default function MoatOptimizer() {
                 className="moat-slider"
                 style={{ background: trackBg }}
               />
-              <div className="flex gap-1.5 mt-3 flex-wrap">
+              <div className="flex gap-1.5 mt-2 flex-wrap">
                 {QUICK_SELECT.map(d => (
                   <button
                     key={d}
@@ -294,7 +301,25 @@ export default function MoatOptimizer() {
                 ))}
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Burn row */}
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-2 items-center">
+              <div
+                className="flex-shrink-0 w-[88px] py-2.5 rounded-xl text-xs font-bold border inline-flex items-center justify-center gap-1.5 [text-shadow:none]"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(249,115,22,0.4)', color: '#f97316' }}
+              >
+                🔥 Burn
+              </div>
+              <input
+                type="number" min="0" placeholder="Enter amount…"
+                value={burnAmount} onChange={e => setBurnAmount(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <p className="text-[10px] text-zinc-600 pl-[96px]">10× points · 10× reward mult</p>
+          </div>
 
           {/* Estimated Epoch Rewards — auto-fetched from last deposit, user-editable */}
           <div className="mt-auto pt-2">
@@ -336,21 +361,17 @@ export default function MoatOptimizer() {
               <tbody className="divide-y divide-zinc-800/50">
                 <tr>
                   <td className="px-3 py-2 text-zinc-300">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="text-[10px]" style={{ opacity: strategy === 'stake' ? 1 : 0.5 }}>🏛️</span>Stake
-                    </span>
+                    <span className="inline-flex items-center gap-1">🏛️ Stake</span>
                   </td>
                   <td className="px-3 py-2 text-zinc-500">—</td>
-                  <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'stake' ? PINK : '#fff' }}>1.00×</td>
+                  <td className="px-3 py-2 text-right font-bold text-white">1.00×</td>
                 </tr>
                 {BREAKPOINTS.filter(row => ![1, 700, 729].includes(row.days)).map(row => {
-                  const active = strategy === 'lock' && days === row.days
+                  const active = days === row.days
                   return (
-                    <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => { setStrategy('lock'); setDays(row.days) }}>
+                    <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => setDays(row.days)}>
                       <td className="px-3 py-2 text-zinc-400">
-                        <span className="inline-flex items-center gap-1">
-                          <span className="text-[10px]" style={{ opacity: active ? 1 : 0.5 }}>🔐</span>Lock
-                        </span>
+                        <span className="inline-flex items-center gap-1">🔐 Lock</span>
                       </td>
                       <td className="px-3 py-2 text-zinc-400">{row.days}d</td>
                       <td className="px-3 py-2 text-right font-bold" style={{ color: active ? PINK : '#fff' }}>
@@ -361,12 +382,10 @@ export default function MoatOptimizer() {
                 })}
                 <tr>
                   <td className="px-3 py-2 text-zinc-300">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="text-[10px]" style={{ opacity: strategy === 'burn' ? 1 : 0.5 }}>🔥</span>Burn
-                    </span>
+                    <span className="inline-flex items-center gap-1">🔥 Burn</span>
                   </td>
                   <td className="px-3 py-2 text-zinc-500">—</td>
-                  <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'burn' ? PINK : '#fff' }}>10.00×</td>
+                  <td className="px-3 py-2 text-right font-bold text-white">10.00×</td>
                 </tr>
               </tbody>
             </table>
@@ -434,7 +453,7 @@ export default function MoatOptimizer() {
             >
               <span className={lbl + ' justify-center'}>Total Moat Points</span>
               <span className="text-4xl font-black [text-shadow:none] leading-none mt-2" style={{ color: '#22d3ee' }}>
-                {hasResult ? Math.round(moatPoints).toLocaleString('en-US') : '—'}
+                {hasResult ? Math.round(totalMoatPoints).toLocaleString('en-US') : '—'}
               </span>
               {hasResult && <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>}
             </div>
@@ -453,12 +472,12 @@ export default function MoatOptimizer() {
               </div>
               <div className="border-t border-zinc-800 my-2" />
               <div className="flex flex-col justify-center flex-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Reward Multiplier</p>
+                <p className="text-[10px] text-zinc-500 mb-1">Avg Reward Multiplier</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: PINK }}>
-                  {multiplier.toFixed(2)}×
+                  {hasResult ? `${userAvgMult.toFixed(2)}×` : `${lockMult.toFixed(2)}×`}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {strategy === 'stake' ? 'base stake rate' : strategy === 'burn' ? 'max burn rate' : `${days}d lock`}
+                  {hasResult ? 'weighted across your position' : `lock ${days}d rate`}
                 </span>
               </div>
             </div>
