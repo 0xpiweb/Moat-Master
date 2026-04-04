@@ -216,7 +216,7 @@ export default function MoatOptimizer() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: PINK }}>
-          Moat Calculator
+          Moat Simulator
         </p>
         <button
           onClick={fetchLive}
@@ -342,7 +342,7 @@ export default function MoatOptimizer() {
                   <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold" style={{ color: strategy === 'stake' ? PINK : '#fff' }}>1.00×</td>
                 </tr>
-                {BREAKPOINTS.map(row => {
+                {BREAKPOINTS.filter(row => ![1, 700, 729].includes(row.days)).map(row => {
                   const active = strategy === 'lock' && days === row.days
                   return (
                     <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => { setStrategy('lock'); setDays(row.days) }}>
