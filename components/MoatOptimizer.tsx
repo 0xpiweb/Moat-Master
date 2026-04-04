@@ -167,21 +167,20 @@ export default function MoatOptimizer() {
   // Lock reward multiplier — determined by slider (2.04× – 5.00×)
   const lockMult = getMultiplier('lock', days)
 
-  // Moat Points: fixed multipliers regardless of lock duration
-  //   Stake × 1 · Lock × 5 (always fixed) · Burn × 10
-  const stakePoints = stake * 1
-  const lockPoints  = lock  * LOCK_MULT   // always 5×
-  const burnPoints  = burn  * 10
-  const totalMoatPoints = stakePoints + lockPoints + burnPoints
+  // Raw power uses fixed multipliers: lock always ×5 for points ("whale cap" via sqrt)
+  const rawPower = (stake * 1) + (lock * LOCK_MULT) + (burn * 10)
 
-  // Weighted average reward multiplier across all strategy amounts
+  // Moat Points = √(rawPower / 1B) × MOAT_SCALAR  — original sqrt formula, all three inputs combined
+  const moatPoints = rawPower > 0 ? Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR : 0
+
+  // Weighted average reward multiplier: stake=1×, lock=slider value, burn=10×
   const totalTokens = stake + lock + burn
   const userAvgMult = totalTokens > 0
     ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
     : 0
 
-  // User Earning Power = Total Moat Points × User Avg Multiplier
-  const userEarningPower = totalMoatPoints * userAvgMult
+  // User Earning Power = Moat Points × Weighted Avg Multiplier
+  const userEarningPower = moatPoints * userAvgMult
 
   // User Share = Earning Power / Total Global Weight (live from contract)
   const userShare = live.sqrtSumScaled > 0 && userEarningPower > 0
@@ -190,7 +189,7 @@ export default function MoatOptimizer() {
   const epochYieldResult = userShare * epochRewards
   const dailyYield       = epochYieldResult / 14
 
-  const hasResult   = totalMoatPoints > 0
+  const hasResult   = rawPower > 0
   const hasLiveData = live.sqrtSumScaled > 0 && epochRewards > 0
 
   // Slider gradient
@@ -453,7 +452,7 @@ export default function MoatOptimizer() {
             >
               <span className={lbl + ' justify-center'}>Total Moat Points</span>
               <span className="text-4xl font-black [text-shadow:none] leading-none mt-2" style={{ color: '#22d3ee' }}>
-                {hasResult ? Math.round(totalMoatPoints).toLocaleString('en-US') : '—'}
+                {hasResult ? Math.round(moatPoints).toLocaleString('en-US') : '—'}
               </span>
               {hasResult && <span className="text-zinc-400 text-sm font-medium mt-1">pts</span>}
             </div>
