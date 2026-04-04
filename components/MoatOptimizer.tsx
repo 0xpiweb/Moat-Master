@@ -87,10 +87,12 @@ function getMultiplier(strategy: Strategy, days: number): number {
 const QUICK_SELECT = [7, 30, 90, 180, 365, 450, 540, 660, 730]
 
 interface LiveData {
-  sqrtSumScaled: number   // totalPoints() / 1e9 = Σ(√rawPower_tokens) across all users
-  moatDensity:   string
-  loading:       boolean
-  error:         boolean
+  sqrtSumScaled:    number   // totalPoints() / 1e9 = Σ(√rawPower_tokens × mult_i) — live reward-share denominator
+  globalMoatPoints: number   // Σ(MoatPoints_i) = sqrtSumScaled × MOAT_SCALAR / √NORM_1B
+  globalAvgMult:    number   // weighted avg multiplier = sqrtSumScaled / unweightedSqrtSum (approx from pool composition)
+  moatDensity:      string
+  loading:          boolean
+  error:            boolean
 }
 
 export default function MoatOptimizer() {
@@ -100,7 +102,7 @@ export default function MoatOptimizer() {
   const [epochRewards, setEpochRewards] = useState(30.41)
   const [epochInput,   setEpochInput]   = useState('30.41')
   const [live,         setLive]         = useState<LiveData>({
-    sqrtSumScaled: 0, moatDensity: '—', loading: true, error: false,
+    sqrtSumScaled: 0, globalMoatPoints: 0, globalAvgMult: 0, moatDensity: '—', loading: true, error: false,
   })
 
   const fetchLive = useCallback(async () => {
@@ -117,14 +119,26 @@ export default function MoatOptimizer() {
       const totalBurned = fromWei(b)
       const moatDensity = ((totalStaked + totalLocked + totalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
 
-      // totalPoints() = Σ(√(userRawPower_wei)) across all users
-      // Dividing by 1e9 gives Σ(√rawPower_tokens) — the correct reward-share denominator
+      // totalPoints() = Σ(√(userRawPower_wei) × mult_i) across all users — live weighted reward-share denominator
+      // Dividing by 1e9 converts from wei-sqrt to token-sqrt: Σ(√rawPower_tokens × mult_i)
       const tp = await client.readContract({
         address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',
       })
       const sqrtSumScaled = Number(tp) / 1e9
 
-      setLive({ sqrtSumScaled, moatDensity, loading: false, error: false })
+      // Aggregate raw power using fixed LOCK_MULT=5 for MoatPoints (as per protocol docs)
+      const totalRawPower = (totalStaked * 1) + (totalLocked * LOCK_MULT) + (totalBurned * 10)
+      // Aggregate sqrt(rawPower) — single-pool approximation for deriving global avg multiplier
+      const sqrtTotalRaw = totalRawPower > 0 ? Math.sqrt(totalRawPower) : 1
+      // globalAvgMult = Σ(√rawPower_i × mult_i) / √(totalRawPower)
+      // This is the effective pool-wide average reward multiplier derived from live on-chain data
+      const globalAvgMult = sqrtTotalRaw > 0 ? sqrtSumScaled / sqrtTotalRaw : 1
+      // Aggregate MoatPoints (treating whole pool as one position) — reference metric for scale
+      const globalMoatPoints = totalRawPower > 0
+        ? Math.sqrt(totalRawPower / NORM_1B) * MOAT_SCALAR
+        : 0
+
+      setLive({ sqrtSumScaled, globalMoatPoints, globalAvgMult, moatDensity, loading: false, error: false })
     } catch {
       setLive(d => ({ ...d, loading: false, error: true }))
     }
@@ -156,9 +170,16 @@ export default function MoatOptimizer() {
   // MoatPoints = √(RawPower / 1B) × MOAT_SCALAR  (1B normalization, per docs)
   const moatPoints = rawPower > 0 ? Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR : 0
 
-  // Reward share = (MoatPoints × avgMultiplier) / Σ(MoatPoints_i × mult_i)
-  // Equivalent to (√rawPower × mult) / Σ(√rawPower_i × mult_i) — SCALAR/√1B cancels in ratio
-  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_i × mult_i) across all users
+  // User Share = (User Moat Points × User Avg Multiplier) / (Total Global Reward Weight)
+  //
+  // Total Global Reward Weight = Σ(MoatPoints_i × mult_i)
+  //   = MOAT_SCALAR/√NORM_1B × Σ(√rawPower_i × mult_i)
+  //   = MOAT_SCALAR/√NORM_1B × sqrtSumScaled
+  //
+  // SCALAR/√1B cancels in the ratio, so the simplified form is:
+  //   userShare = (√rawPower × mult) / Σ(√rawPower_i × mult_i) = userSqrt / sqrtSumScaled
+  //
+  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_i × mult_i) — fetched live from contract
   const userSqrt  = rawPower > 0 ? Math.sqrt(rawPower) * multiplier : 0
   const userShare = live.sqrtSumScaled > 0 && userSqrt > 0
     ? userSqrt / live.sqrtSumScaled : 0
@@ -421,22 +442,26 @@ export default function MoatOptimizer() {
             <div className={card + ' flex flex-col'}>
               <span className={lbl}>Moat Vitality</span>
               <div className="flex flex-col justify-center flex-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
-                <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
-                  {live.loading ? '…' : `${live.moatDensity}%`}
+                <p className="text-[10px] text-zinc-500 mb-1">Global Pool Weight</p>
+                <span className="text-lg font-black [text-shadow:none] leading-tight text-white">
+                  {live.loading ? '…' : live.sqrtSumScaled > 0
+                    ? live.sqrtSumScaled.toLocaleString('en-US', { maximumFractionDigits: 0 })
+                    : '—'}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : 'of supply secured · live'}
+                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : `${live.globalAvgMult > 0 ? `~${live.globalAvgMult.toFixed(2)}× avg mult · ` : ''}live denominator`}
                 </span>
               </div>
               <div className="border-t border-zinc-800 my-2" />
               <div className="flex flex-col justify-center flex-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Reward Multiplier</p>
-                <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: PINK }}>
-                  {multiplier.toFixed(2)}×
+                <p className="text-[10px] text-zinc-500 mb-1">Moat Density · Your Mult</p>
+                <span className="text-lg font-black [text-shadow:none] leading-tight text-white">
+                  {live.loading ? '…' : `${live.moatDensity}%`}
+                  <span className="text-[10px] text-zinc-500 font-semibold ml-2">·</span>
+                  <span className="ml-2" style={{ color: PINK }}>{multiplier.toFixed(2)}×</span>
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {strategy === 'stake' ? 'base stake rate' : strategy === 'burn' ? 'max burn rate' : `${days}d lock`}
+                  {live.loading ? '…' : `supply in moat · ${strategy === 'stake' ? 'stake rate' : strategy === 'burn' ? 'burn rate' : `${days}d lock`}`}
                 </span>
               </div>
             </div>

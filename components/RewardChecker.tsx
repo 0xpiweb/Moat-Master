@@ -43,15 +43,9 @@ const PHASE1_TOTAL = LEGACY_INJECTION_AVAX * (1 - Math.pow(1 - LEGACY_ERA_RATE, 
 // Transition (Mar 30): 30.41 AVAX loaded, 7.148% released
 const TRANSITION_TOTAL = 30.41 * LEGACY_ERA_RATE
 
-// Global reward power anchor
-const GLOBAL_REWARD_POWER = 3_942_855_424
-
-// Ecosystem snapshot
-const TOTAL_SUPPLY  = 1_350_000_000
-const GLOBAL_STAKED =   155_693_804
-const GLOBAL_LOCKED =   152_330_218
-const GLOBAL_BURNED =   321_438_924
-const MOAT_DENSITY  = ((GLOBAL_STAKED + GLOBAL_LOCKED + GLOBAL_BURNED) / TOTAL_SUPPLY * 100).toFixed(2)
+// Fixed protocol constants
+const TOTAL_SUPPLY = 1_350_000_000
+const LOCK_MULT_POINTS = 5   // fixed multiplier for MoatPoints raw-power (per protocol docs)
 
 // ── Phase 2 elapsed AVAX (computed at runtime) ─────────────────────────────────
 function getPhase2ElapsedAvax(): number {
@@ -65,6 +59,9 @@ const MOAT_ABI = parseAbi([
   'function userInfo(address) view returns (uint256 stakedAmount, uint256 totalUserBurn, uint256 stakingPoints, uint256 burnPoints, uint256 activeLockCount)',
   'function getUserAllLocks(address) view returns (uint256[] amounts, uint256[] ends, uint256[] points, uint256[] originalDurations, uint256[] lastUpdated, bool[] active)',
   'function getAllPendingRewards(address) view returns (address[] tokens, uint256[] amounts)',
+  // Global pool data — used to replace static GLOBAL_REWARD_POWER with live denominator
+  'function getTotalAmounts() view returns (uint256 totalStaked, uint256 totalLocked, uint256 totalBurned, uint256 totalInContract)',
+  'function totalPoints() view returns (uint256)',
 ] as const)
 
 // ── Lock multiplier (piecewise linear) ────────────────────────────────────────
@@ -104,16 +101,23 @@ function fmtPwr(n: number): string {
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface LockItem { amount: number; endTs: number; durDays: number; active: boolean }
 interface CheckResult {
-  pendingAvax:      number   // live contract — center hero
-  userTotalEarned:  number   // timeline estimate — left
-  alreadyWithdrawn: number   // totalEarned − pendingAvax — right
-  stakedAmount:     number
-  totalLockedUser:  number
-  activeLockCount:  number
-  totalBurnUser:    number
-  userEarningPower: number
-  estimatedDaily:   number
-  locks:            LockItem[]
+  pendingAvax:         number   // live contract — center hero
+  userTotalEarned:     number   // timeline estimate — left
+  alreadyWithdrawn:    number   // totalEarned − pendingAvax — right
+  stakedAmount:        number
+  totalLockedUser:     number
+  activeLockCount:     number
+  totalBurnUser:       number
+  userEarningPower:    number
+  estimatedDaily:      number
+  locks:               LockItem[]
+  // Live global pool state (fetched fresh on each lookup)
+  globalStaked:        number
+  globalLocked:        number
+  globalBurned:        number
+  globalEarningPower:  number   // live denominator — replaces static GLOBAL_REWARD_POWER
+  globalAvgMult:       number   // effective pool-wide avg reward multiplier derived from totalPoints()
+  globalDensity:       string
 }
 interface Countdown { hours: number; mins: number; epochPct: number; daysLeft: number }
 
@@ -172,16 +176,34 @@ export default function RewardChecker() {
       type Tup5 = readonly [bigint, bigint, bigint, bigint, bigint]
       type Tup6 = readonly [readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly boolean[]]
       type Tup2 = readonly [readonly Address[], readonly bigint[]]
+      type Tup4 = readonly [bigint, bigint, bigint, bigint]
 
-      const [rawUserInfo, rawLocks, rawPending] = await Promise.all([
+      const [rawUserInfo, rawLocks, rawPending, rawTotals, rawTotalPoints] = await Promise.all([
         client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',            args: [address] }).catch(() => null),
         client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',     args: [address] }).catch(() => null),
         client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards', args: [address] }).catch(() => null),
+        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getTotalAmounts' }).catch(() => null),
+        client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints' }).catch(() => null),
       ])
 
-      const ui = rawUserInfo as unknown as Tup5 | null
-      const lk = rawLocks    as unknown as Tup6 | null
-      const pd = rawPending  as unknown as Tup2 | null
+      const ui = rawUserInfo  as unknown as Tup5 | null
+      const lk = rawLocks     as unknown as Tup6 | null
+      const pd = rawPending   as unknown as Tup2 | null
+      const gt = rawTotals    as unknown as Tup4 | null
+
+      // ── Live global pool state (replaces static GLOBAL_REWARD_POWER) ──────────
+      const globalStaked = fmtE(gt?.[0])
+      const globalLocked = fmtE(gt?.[1])
+      const globalBurned = fmtE(gt?.[2])
+      const globalDensity = ((globalStaked + globalLocked + globalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
+      // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_i × mult_i) — live reward-share denominator
+      const sqrtSumScaled = rawTotalPoints != null ? Number(rawTotalPoints as bigint) / 1e9 : 0
+      // Derive effective global avg multiplier from sqrt-weighted sum and aggregate raw power
+      const globalRawPower = (globalStaked * 1) + (globalLocked * LOCK_MULT_POINTS) + (globalBurned * 10)
+      const sqrtGlobalRaw  = globalRawPower > 0 ? Math.sqrt(globalRawPower) : 1
+      const globalAvgMult  = sqrtSumScaled > 0 && sqrtGlobalRaw > 0 ? sqrtSumScaled / sqrtGlobalRaw : 3.5
+      // Live linear earning power denominator: totalStaked×1 + totalLocked×avgMult + totalBurned×10
+      const globalEarningPower = globalStaked + (globalLocked * globalAvgMult) + (globalBurned * 10)
 
       const stakedAmount    = fmtE(ui?.[0])
       const totalBurnUser   = fmtE(ui?.[1])
@@ -213,11 +235,13 @@ export default function RewardChecker() {
         .filter(l => l.active)
         .reduce((s, l) => s + l.amount * getLockMultiplier(l.durDays), 0)
       const userEarningPower = (totalBurnUser * 10) + lockEP + (stakedAmount * 1)
-      const estimatedDaily   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX * PULSES_PER_DAY
+      // Use live globalEarningPower as denominator (replaces static GLOBAL_REWARD_POWER)
+      const denominator    = globalEarningPower > 0 ? globalEarningPower : 1
+      const estimatedDaily = (userEarningPower / denominator) * PULSE_AVAX * PULSES_PER_DAY
 
       // ── Timeline estimate: Phase1 + Transition + Phase2 ───────────────────
       const totalDistributed = PHASE1_TOTAL + TRANSITION_TOTAL + getPhase2ElapsedAvax()
-      const userTotalEarned  = (userEarningPower / GLOBAL_REWARD_POWER) * totalDistributed
+      const userTotalEarned  = (userEarningPower / denominator) * totalDistributed
 
       // ── Already withdrawn = timeline estimate minus live pending ───────────
       const alreadyWithdrawn = Math.max(0, userTotalEarned - pendingAvax)
@@ -233,6 +257,12 @@ export default function RewardChecker() {
         userEarningPower,
         estimatedDaily,
         locks: lockItems,
+        globalStaked,
+        globalLocked,
+        globalBurned,
+        globalEarningPower,
+        globalAvgMult,
+        globalDensity,
       })
     } catch (err: unknown) {
       setError(
@@ -361,24 +391,28 @@ export default function RewardChecker() {
               <span className={lbl}>Moat Vitality</span>
               {/* Top slot */}
               <div className="flex flex-col justify-center flex-1 pt-2">
-                <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
+                <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density · Live</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
-                  {MOAT_DENSITY}%
+                  {result.globalDensity}%
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  Staked <span className="font-semibold" style={{ color: '#67e8f9' }}>{fmtPwr(GLOBAL_STAKED)}</span>
-                  {' · '}Locked <span className="font-semibold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
-                  {' · '}Burned <span className="font-semibold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
+                  Staked <span className="font-semibold" style={{ color: '#67e8f9' }}>{fmtPwr(result.globalStaked)}</span>
+                  {' · '}Locked <span className="font-semibold" style={{ color: '#a78bfa' }}>{fmtPwr(result.globalLocked)}</span>
+                  {' · '}Burned <span className="font-semibold" style={{ color: '#fb923c' }}>{fmtPwr(result.globalBurned)}</span>
                 </span>
               </div>
               <div className="border-t border-zinc-800 my-2" />
               {/* Bottom slot */}
               <div className="flex flex-col justify-center flex-1 pb-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Next Payout</p>
-                <span className="text-xl font-black font-mono [text-shadow:none] leading-tight text-white">
-                  {countdown.hours}h {String(countdown.mins).padStart(2, '0')}m
+                <p className="text-[10px] text-zinc-500 mb-1">Global Pool Weight · Next Payout</p>
+                <span className="text-base font-black font-mono [text-shadow:none] leading-tight text-white">
+                  {fmtPwr(result.globalEarningPower)}
+                  <span className="text-[10px] text-zinc-500 font-semibold ml-2">·</span>
+                  <span className="ml-2 text-white">{countdown.hours}h {String(countdown.mins).padStart(2, '0')}m</span>
                 </span>
-                <span className="text-[10px] text-zinc-600 mt-0.5">{(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily</span>
+                <span className="text-[10px] text-zinc-600 mt-0.5">
+                  ~{result.globalAvgMult.toFixed(2)}× avg mult · {(PULSE_AVAX * PULSES_PER_DAY).toFixed(4)} $AVAX daily
+                </span>
               </div>
             </div>
           </div>
