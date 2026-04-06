@@ -179,10 +179,12 @@ export default function MoatOptimizer() {
     ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
     : 0
 
-  // User Earning Power = Moat Points × Weighted Avg Multiplier
-  const userEarningPower = moatPoints * userAvgMult
+  // User Earning Power = √(rawPower_tokens) × Weighted Avg Multiplier
+  // Must use √rawPower (not moatPoints) to stay in the same unit space as
+  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_tokens × mult_i)
+  const userEarningPower = rawPower > 0 ? Math.sqrt(rawPower) * userAvgMult : 0
 
-  // User Share = Earning Power / Total Global Weight (live from contract)
+  // User Share = User Earning Power / Total Global Earning Power (live from contract)
   const userShare = live.sqrtSumScaled > 0 && userEarningPower > 0
     ? userEarningPower / live.sqrtSumScaled : 0
 
