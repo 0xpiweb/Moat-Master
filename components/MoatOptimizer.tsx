@@ -120,12 +120,21 @@ export default function MoatOptimizer() {
       const totalBurned = fromWei(b)
       const moatDensity = ((totalStaked + totalLocked + totalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
 
-      // totalPoints() = Σ(√(userRawPower_wei) × mult_i) across all users — live weighted reward-share denominator
-      // Dividing by 1e9 converts from wei-sqrt to token-sqrt: Σ(√rawPower_tokens × mult_i)
+      // totalPoints() = Σ(√(rawPower_wei_i) × mult_i) across all users.
+      // Unit derivation:
+      //   rawPower_wei = rawPower_tokens × 10^18   (standard 18-decimal ERC-20)
+      //   √(rawPower_wei) = √(rawPower_tokens) × 10^9
+      //   → tp = Σ(√(rawPower_tokens_i) × 10^9 × mult_i)
+      //   → tp / 10^9 = Σ(√(rawPower_tokens_i) × mult_i)  ← same unit as userEarningPower
+      //
+      // IMPORTANT: divide in BigInt space before calling Number().
+      // For a large pool tp can exceed Number.MAX_SAFE_INTEGER (≈9×10^15), causing
+      // Number(tp) to silently lose precision and inflate the denominator by 2–3×.
+      // BigInt integer division is exact; the quotient (~10^6 range) fits safely.
       const tp = await client.readContract({
         address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',
       })
-      const sqrtSumScaled = Number(tp) / 1e9
+      const sqrtSumScaled = Number(tp / 1_000_000_000n)
 
       // Aggregate raw power using fixed LOCK_MULT=5 for MoatPoints (as per protocol docs)
       const totalRawPower = (totalStaked * 1) + (totalLocked * LOCK_MULT) + (totalBurned * 10)
