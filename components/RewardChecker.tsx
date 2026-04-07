@@ -35,15 +35,7 @@ const PULSES_PER_DAY     = 4
 const PAYOUT_INTERVAL_S  = 6 * 3600
 const PULSE_AVAX         = 0.577
 
-// Phase 1 (Mar 16–29): 14 days, 7.148% diminishing daily from 30.6 AVAX
-const LEGACY_ERA_RATE       = 0.07148
-const LEGACY_INJECTION_AVAX = 30.6
-const PHASE1_TOTAL = LEGACY_INJECTION_AVAX * (1 - Math.pow(1 - LEGACY_ERA_RATE, 14))
-
-// Transition (Mar 30): 30.41 AVAX loaded, 7.148% released
-const TRANSITION_TOTAL = 30.41 * LEGACY_ERA_RATE
-
-// Global reward power anchor
+// Global reward power anchor (used only for estimatedDaily)
 const GLOBAL_REWARD_POWER = 3_942_855_424
 
 // Ecosystem snapshot
@@ -53,13 +45,6 @@ const GLOBAL_LOCKED =   152_330_218
 const GLOBAL_BURNED =   321_438_924
 const MOAT_DENSITY  = ((GLOBAL_STAKED + GLOBAL_LOCKED + GLOBAL_BURNED) / TOTAL_SUPPLY * 100).toFixed(2)
 
-// ── Phase 2 elapsed AVAX (computed at runtime) ─────────────────────────────────
-function getPhase2ElapsedAvax(): number {
-  const now     = Math.floor(Date.now() / 1000)
-  const elapsed = Math.max(0, now - FIXED_ERA_START_TS)
-  const pulses  = Math.floor(elapsed / PAYOUT_INTERVAL_S)
-  return pulses * PULSE_AVAX
-}
 
 const MOAT_ABI = parseAbi([
   'function userInfo(address) view returns (uint256 stakedAmount, uint256 totalUserBurn, uint256 stakingPoints, uint256 burnPoints, uint256 activeLockCount)',
@@ -105,8 +90,8 @@ function fmtPwr(n: number): string {
 interface LockItem { amount: number; endTs: number; durDays: number; active: boolean }
 interface CheckResult {
   pendingAvax:      number   // live contract — center hero
-  userTotalEarned:  number   // timeline estimate — left
-  alreadyWithdrawn: number   // totalEarned − pendingAvax — right
+  alreadyClaimed:   number   // sum of RewardClaimed events — left bottom
+  userTotalEarned:  number   // pendingAvax + alreadyClaimed — left top
   stakedAmount:     number
   totalLockedUser:  number
   activeLockCount:  number
@@ -173,10 +158,11 @@ export default function RewardChecker() {
       type Tup6 = readonly [readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly bigint[], readonly boolean[]]
       type Tup2 = readonly [readonly Address[], readonly bigint[]]
 
-      const [rawUserInfo, rawLocks, rawPending] = await Promise.all([
+      const [rawUserInfo, rawLocks, rawPending, claimedRes] = await Promise.all([
         client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'userInfo',            args: [address] }).catch(() => null),
         client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getUserAllLocks',     args: [address] }).catch(() => null),
         client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getAllPendingRewards', args: [address] }).catch(() => null),
+        fetch(`/api/claimed-rewards?address=${address}`).then(r => r.json()).catch(() => ({ alreadyClaimed: 0 })),
       ])
 
       const ui = rawUserInfo as unknown as Tup5 | null
@@ -215,17 +201,14 @@ export default function RewardChecker() {
       const userEarningPower = (totalBurnUser * 10) + lockEP + (stakedAmount * 1)
       const estimatedDaily   = (userEarningPower / GLOBAL_REWARD_POWER) * PULSE_AVAX * PULSES_PER_DAY
 
-      // ── Timeline estimate: Phase1 + Transition + Phase2 ───────────────────
-      const totalDistributed = PHASE1_TOTAL + TRANSITION_TOTAL + getPhase2ElapsedAvax()
-      const userTotalEarned  = (userEarningPower / GLOBAL_REWARD_POWER) * totalDistributed
-
-      // ── Already withdrawn = timeline estimate minus live pending ───────────
-      const alreadyWithdrawn = Math.max(0, userTotalEarned - pendingAvax)
+      // ── Actual claimed rewards from on-chain events ────────────────────────
+      const alreadyClaimed  = typeof claimedRes?.alreadyClaimed === 'number' ? claimedRes.alreadyClaimed : 0
+      const userTotalEarned = pendingAvax + alreadyClaimed
 
       setResult({
         pendingAvax,
+        alreadyClaimed,
         userTotalEarned,
-        alreadyWithdrawn,
         stakedAmount,
         totalLockedUser,
         activeLockCount,
@@ -318,7 +301,7 @@ export default function RewardChecker() {
               <span className={lbl}>Rewards Ledger</span>
               {/* Top slot */}
               <div className="flex flex-col justify-center flex-1 pt-2">
-                <p className="text-[10px] text-zinc-500 mb-1">Total Earned (Est.)</p>
+                <p className="text-[10px] text-zinc-500 mb-1">Total Earned</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight" style={{ color: '#4ade80' }}>
                   {result.userTotalEarned.toFixed(6)}
                 </span>
@@ -327,9 +310,9 @@ export default function RewardChecker() {
               <div className="border-t border-zinc-800 my-2" />
               {/* Bottom slot */}
               <div className="flex flex-col justify-center flex-1 pb-1">
-                <p className="text-[10px] text-zinc-500 mb-1">Already Claimed (Est.)</p>
+                <p className="text-[10px] text-zinc-500 mb-1">Already Claimed</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight text-slate-500">
-                  {result.alreadyWithdrawn.toFixed(6)}
+                  {result.alreadyClaimed.toFixed(6)}
                 </span>
                 <span className="text-[10px] text-zinc-700 mt-0.5">$AVAX</span>
               </div>
