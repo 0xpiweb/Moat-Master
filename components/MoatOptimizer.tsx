@@ -156,7 +156,7 @@ export default function MoatOptimizer() {
 
   const fetchDeposit = useCallback(async () => {
     try {
-      const res  = await fetch('/api/last-deposit')
+      const res  = await fetch('/api/last-deposit', { next: { revalidate: 0 } })
       const { avax, source } = await res.json() as { avax: number; source: string }
       // Only update if the chain value is larger than what we already have.
       // This prevents a small recent deposit (e.g. ~11 AVAX) from clobbering the
@@ -421,7 +421,7 @@ export default function MoatOptimizer() {
               {/* Green reward-share bar */}
               <div className="mb-3">
                 <div className="flex justify-between items-baseline mb-1.5">
-                  <span className="text-[10px] text-zinc-500">Reward Share</span>
+                  <span className="text-[10px] text-zinc-500">LIVE Reward Share (v2)</span>
                   <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
                     {hasResult && live.sqrtSumScaled > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
                   </span>
