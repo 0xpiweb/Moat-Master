@@ -149,10 +149,12 @@ export default function MoatOptimizer() {
     try {
       const res  = await fetch('/api/last-deposit')
       const { avax, source } = await res.json() as { avax: number; source: string }
-      // Only update the field when we got a real on-chain deposit — never overwrite with the fallback
+      // Only update if the chain value is larger than what we already have.
+      // This prevents a small recent deposit (e.g. ~11 AVAX) from clobbering the
+      // 30.41 default when the true epoch pool is higher.
       if (source === 'chain' && avax > 0) {
-        setEpochRewards(avax)
-        setEpochInput(avax.toFixed(2))
+        setEpochRewards(prev => avax > prev ? avax : prev)
+        setEpochInput(prev => avax > parseFloat(prev) ? avax.toFixed(2) : prev)
       }
     } catch { /* keep default */ }
   }, [])
