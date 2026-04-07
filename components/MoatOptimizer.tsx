@@ -40,9 +40,11 @@ function fromWei(wei: bigint): number {
 //   vroshi55  (361,465 B)         →  1,637 pts ✓ exact
 //   930k locked (any duration)    →  1,856 pts ✓ (locked × 5, not × ML)
 //   piweb.bensi (91.6k S + 500k L + 54.3M B) → 20,104 pts ✓ exact
-const NORM_1B     = 1_000_000_000
-const MOAT_SCALAR = 27_220
-const LOCK_MULT   = 5   // fixed lock multiplier for MoatPoints (duration affects rewards only)
+const NORM_1B        = 1_000_000_000
+const MOAT_SCALAR    = 27_220
+const LOCK_MULT      = 5       // fixed lock multiplier for MoatPoints (duration affects rewards only)
+const PULSE_AVAX     = 0.577   // AVAX per payout pulse
+const PULSES_PER_DAY = 4       // 4 × 6-hour pulses per day
 
 // ── Multiplier table — all 16 official breakpoints (linear interpolation) ─────
 type Strategy = 'stake' | 'lock' | 'burn'
@@ -98,8 +100,8 @@ export default function MoatOptimizer() {
   const [epochRewards,      setEpochRewards]      = useState(30.41)
   const [epochInput,        setEpochInput]        = useState('30.41')
   const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', loading: true, error: false })
-  const [globalMoatPoints,  setGlobalMoatPoints]  = useState(0)
-  const [globalPowerLoading, setGlobalPowerLoading] = useState(true)
+  const [totalWeight,         setTotalWeight]         = useState(0)
+  const [weightedPowerLoading, setWeightedPowerLoading] = useState(true)
 
   const fetchLive = useCallback(async () => {
     setLive(d => ({ ...d, loading: true, error: false }))
@@ -117,17 +119,16 @@ export default function MoatOptimizer() {
     }
   }, [])
 
-  // Fetches Σ(moatPoints_i) across all active users from our server-side route.
-  // The route enumerates every position on-chain and applies the same sqrt formula,
-  // giving a denominator that is consistent with the displayed moatPoints value.
-  const fetchGlobalPower = useCallback(async () => {
-    setGlobalPowerLoading(true)
+  // Fetches Σ(points_i × avgMultiplier_i) from the Moat API via our server-side proxy.
+  // This totalWeight mirrors the contract's weighted distribution logic exactly.
+  const fetchWeightedPower = useCallback(async () => {
+    setWeightedPowerLoading(true)
     try {
-      const res  = await fetch('/api/global-power', { next: { revalidate: 3600 } })
-      const data = await res.json() as { globalMoatPoints: number; userCount: number }
-      if (data.globalMoatPoints > 0) setGlobalMoatPoints(data.globalMoatPoints)
+      const res  = await fetch('/api/moat-weighted-power')
+      const data = await res.json() as { totalWeight: number; participantCount: number }
+      if (data.totalWeight > 0) setTotalWeight(data.totalWeight)
     } catch { /* keep 0 — hasLiveData guard will hide results */ }
-    finally { setGlobalPowerLoading(false) }
+    finally { setWeightedPowerLoading(false) }
   }, [])
 
   const fetchDeposit = useCallback(async () => {
@@ -144,7 +145,7 @@ export default function MoatOptimizer() {
     } catch { /* keep default */ }
   }, [])
 
-  useEffect(() => { fetchLive(); fetchDeposit(); fetchGlobalPower() }, [fetchLive, fetchDeposit, fetchGlobalPower])
+  useEffect(() => { fetchLive(); fetchDeposit(); fetchWeightedPower() }, [fetchLive, fetchDeposit, fetchWeightedPower])
 
   // ── Formula ──────────────────────────────────────────────────────────────────
   const stake = parseFloat(stakeAmount) || 0
@@ -166,17 +167,20 @@ export default function MoatOptimizer() {
     ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
     : 0
 
-  // Reward share = user's moatPoints / Σ(moatPoints_i) across all users.
-  // globalMoatPoints is fetched server-side from /api/global-power, which enumerates
-  // every active position on-chain and applies the same sqrt formula as displayed here.
-  const userShare = globalMoatPoints > 0 && moatPoints > 0
-    ? moatPoints / globalMoatPoints : 0
+  // Weighted reward share — mirrors contract distribution:
+  //   userWeight  = moatPoints × avgMultiplier (user's simulated position)
+  //   totalWeight = Σ(points_i × avgMultiplier_i) from live Moat API
+  //   share       = userWeight / totalWeight
+  //   dailyYield  = share × PULSE_AVAX × PULSES_PER_DAY
+  const userWeight = moatPoints * userAvgMult
+  const userShare  = totalWeight > 0 && userWeight > 0
+    ? userWeight / totalWeight : 0
 
-  const epochYieldResult = userShare * epochRewards
-  const dailyYield       = epochYieldResult / 14
+  const dailyYield       = userShare * PULSE_AVAX * PULSES_PER_DAY
+  const epochYieldResult = dailyYield * 14
 
   const hasResult   = rawPower > 0
-  const hasLiveData = globalMoatPoints > 0 && epochRewards > 0
+  const hasLiveData = totalWeight > 0
 
   // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
@@ -208,11 +212,11 @@ export default function MoatOptimizer() {
           Moat Simulator
         </p>
         <button
-          onClick={() => { fetchLive(); fetchGlobalPower() }}
-          disabled={live.loading || globalPowerLoading}
+          onClick={() => { fetchLive(); fetchWeightedPower() }}
+          disabled={live.loading || weightedPowerLoading}
           className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 disabled:opacity-40"
         >
-          {(live.loading || globalPowerLoading) ? '⟳ Loading…' : live.error ? '⚠ Retry' : '⟳ Refresh'}
+          {(live.loading || weightedPowerLoading) ? '⟳ Loading…' : live.error ? '⚠ Retry' : '⟳ Refresh'}
         </button>
       </div>
 
@@ -396,14 +400,14 @@ export default function MoatOptimizer() {
                 <div className="flex justify-between items-baseline mb-1.5">
                   <span className="text-[10px] text-zinc-500">Reward Share</span>
                   <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
-                    {hasResult && globalMoatPoints > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
+                    {hasResult && totalWeight > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
                   </span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: hasResult && globalMoatPoints > 0
+                      width: hasResult && totalWeight > 0
                         ? `${Math.min(Math.max(userShare * 2000, 0.5), 100)}%`
                         : '0%',
                       background: 'linear-gradient(90deg, #4ade80, #22d3ee)',
@@ -426,7 +430,7 @@ export default function MoatOptimizer() {
                   {hasResult && hasLiveData ? `~${epochYieldResult.toFixed(4)}` : '—'}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {`$AVAX · ${epochRewards.toFixed(2)} epoch pool`}
+                  $AVAX · daily × 14
                 </span>
               </div>
             </div>
