@@ -21,8 +21,6 @@ const avalanche = {
 const MOAT_ABI = parseAbi([
   // Returns total staked / locked / burned / in-contract (all in wei)
   'function getTotalAmounts() view returns (uint256 totalStaked, uint256 totalLocked, uint256 totalBurned, uint256 totalInContract)',
-  // Returns Σ(sqrt(userRawPower_wei)) across all users — used for reward-share denominator
-  'function totalPoints() view returns (uint256)',
 ])
 
 function fromWei(wei: bigint): number {
@@ -87,12 +85,9 @@ function getMultiplier(strategy: Strategy, days: number): number {
 const QUICK_SELECT = [7, 30, 90, 180, 365, 450, 540, 660, 730]
 
 interface LiveData {
-  sqrtSumScaled:    number   // totalPoints() / 1e9 = Σ(√rawPower_tokens × mult_i) — live reward-share denominator
-  globalMoatPoints: number   // Σ(MoatPoints_i) = sqrtSumScaled × MOAT_SCALAR / √NORM_1B
-  globalAvgMult:    number   // weighted avg multiplier = sqrtSumScaled / unweightedSqrtSum (approx from pool composition)
-  moatDensity:      string
-  loading:          boolean
-  error:            boolean
+  moatDensity: string
+  loading:     boolean
+  error:       boolean
 }
 
 export default function MoatOptimizer() {
@@ -100,58 +95,39 @@ export default function MoatOptimizer() {
   const [lockAmount,  setLockAmount]  = useState('')
   const [burnAmount,  setBurnAmount]  = useState('')
   const [days,        setDays]        = useState(365)
-  const [epochRewards, setEpochRewards] = useState(30.41)
-  const [epochInput,   setEpochInput]   = useState('30.41')   // 2 dp — updated only on real chain fetch
-  const [live,         setLive]         = useState<LiveData>({
-    sqrtSumScaled: 0, globalMoatPoints: 0, globalAvgMult: 0, moatDensity: '—', loading: true, error: false,
-  })
+  const [epochRewards,      setEpochRewards]      = useState(30.41)
+  const [epochInput,        setEpochInput]        = useState('30.41')
+  const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', loading: true, error: false })
+  const [globalMoatPoints,  setGlobalMoatPoints]  = useState(0)
+  const [globalPowerLoading, setGlobalPowerLoading] = useState(true)
 
   const fetchLive = useCallback(async () => {
     setLive(d => ({ ...d, loading: true, error: false }))
     try {
       const client = createPublicClient({ chain: avalanche, transport: http(RPC_URL) })
-
-      // Global token amounts (for density display)
       const [s, l, b] = await client.readContract({
         address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getTotalAmounts',
       })
-      const totalStaked = fromWei(s)
-      const totalLocked = fromWei(l)
-      const totalBurned = fromWei(b)
-      const moatDensity = ((totalStaked + totalLocked + totalBurned) / TOTAL_SUPPLY * 100).toFixed(2)
-
-      // totalPoints() = Σ(√(rawPower_wei_i) × mult_i) across all users.
-      // Unit derivation:
-      //   rawPower_wei = rawPower_tokens × 10^18   (standard 18-decimal ERC-20)
-      //   √(rawPower_wei) = √(rawPower_tokens) × 10^9
-      //   → tp = Σ(√(rawPower_tokens_i) × 10^9 × mult_i)
-      //   → tp / 10^9 = Σ(√(rawPower_tokens_i) × mult_i)  ← same unit as userEarningPower
-      //
-      // IMPORTANT: divide in BigInt space before calling Number().
-      // For a large pool tp can exceed Number.MAX_SAFE_INTEGER (≈9×10^15), causing
-      // Number(tp) to silently lose precision and inflate the denominator by 2–3×.
-      // BigInt integer division is exact; the quotient (~10^6 range) fits safely.
-      const tp = await client.readContract({
-        address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'totalPoints',
-      })
-      const sqrtSumScaled = Number(tp / 1_000_000_000n)
-
-      // Aggregate raw power using fixed LOCK_MULT=5 for MoatPoints (as per protocol docs)
-      const totalRawPower = (totalStaked * 1) + (totalLocked * LOCK_MULT) + (totalBurned * 10)
-      // Aggregate sqrt(rawPower) — single-pool approximation for deriving global avg multiplier
-      const sqrtTotalRaw = totalRawPower > 0 ? Math.sqrt(totalRawPower) : 1
-      // globalAvgMult = Σ(√rawPower_i × mult_i) / √(totalRawPower)
-      // This is the effective pool-wide average reward multiplier derived from live on-chain data
-      const globalAvgMult = sqrtTotalRaw > 0 ? sqrtSumScaled / sqrtTotalRaw : 1
-      // Aggregate MoatPoints (treating whole pool as one position) — reference metric for scale
-      const globalMoatPoints = totalRawPower > 0
-        ? Math.sqrt(totalRawPower / NORM_1B) * MOAT_SCALAR
-        : 0
-
-      setLive({ sqrtSumScaled, globalMoatPoints, globalAvgMult, moatDensity, loading: false, error: false })
+      const moatDensity = (
+        (fromWei(s) + fromWei(l) + fromWei(b)) / TOTAL_SUPPLY * 100
+      ).toFixed(2)
+      setLive({ moatDensity, loading: false, error: false })
     } catch {
       setLive(d => ({ ...d, loading: false, error: true }))
     }
+  }, [])
+
+  // Fetches Σ(moatPoints_i) across all active users from our server-side route.
+  // The route enumerates every position on-chain and applies the same sqrt formula,
+  // giving a denominator that is consistent with the displayed moatPoints value.
+  const fetchGlobalPower = useCallback(async () => {
+    setGlobalPowerLoading(true)
+    try {
+      const res  = await fetch('/api/global-power', { next: { revalidate: 3600 } })
+      const data = await res.json() as { globalMoatPoints: number; userCount: number }
+      if (data.globalMoatPoints > 0) setGlobalMoatPoints(data.globalMoatPoints)
+    } catch { /* keep 0 — hasLiveData guard will hide results */ }
+    finally { setGlobalPowerLoading(false) }
   }, [])
 
   const fetchDeposit = useCallback(async () => {
@@ -168,7 +144,7 @@ export default function MoatOptimizer() {
     } catch { /* keep default */ }
   }, [])
 
-  useEffect(() => { fetchLive(); fetchDeposit() }, [fetchLive, fetchDeposit])
+  useEffect(() => { fetchLive(); fetchDeposit(); fetchGlobalPower() }, [fetchLive, fetchDeposit, fetchGlobalPower])
 
   // ── Formula ──────────────────────────────────────────────────────────────────
   const stake = parseFloat(stakeAmount) || 0
@@ -190,32 +166,17 @@ export default function MoatOptimizer() {
     ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
     : 0
 
-  // User Earning Power = √(rawPower_tokens) × Weighted Avg Multiplier
-  // Must use √rawPower (not moatPoints) to stay in the same unit space as
-  // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_tokens × mult_i)
-  const userEarningPower = rawPower > 0 ? Math.sqrt(rawPower) * userAvgMult : 0
-
-  // DEBUG — remove once unit mismatch is confirmed resolved
-  if (rawPower > 0 && live.sqrtSumScaled > 0) {
-    console.log('[MoatOptimizer debug]', {
-      rawPower,
-      sqrtRawPower:      Math.sqrt(rawPower),
-      userAvgMult:       +userAvgMult.toFixed(4),
-      userEarningPower:  +userEarningPower.toFixed(2),
-      sqrtSumScaled:     live.sqrtSumScaled,
-      impliedShare_pct:  +((userEarningPower / live.sqrtSumScaled) * 100).toFixed(4),
-    })
-  }
-
-  // User Share = User Earning Power / Total Global Earning Power (live from contract)
-  const userShare = live.sqrtSumScaled > 0 && userEarningPower > 0
-    ? userEarningPower / live.sqrtSumScaled : 0
+  // Reward share = user's moatPoints / Σ(moatPoints_i) across all users.
+  // globalMoatPoints is fetched server-side from /api/global-power, which enumerates
+  // every active position on-chain and applies the same sqrt formula as displayed here.
+  const userShare = globalMoatPoints > 0 && moatPoints > 0
+    ? moatPoints / globalMoatPoints : 0
 
   const epochYieldResult = userShare * epochRewards
   const dailyYield       = epochYieldResult / 14
 
   const hasResult   = rawPower > 0
-  const hasLiveData = live.sqrtSumScaled > 0 && epochRewards > 0
+  const hasLiveData = globalMoatPoints > 0 && epochRewards > 0
 
   // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
@@ -247,11 +208,11 @@ export default function MoatOptimizer() {
           Moat Simulator
         </p>
         <button
-          onClick={fetchLive}
-          disabled={live.loading}
+          onClick={() => { fetchLive(); fetchGlobalPower() }}
+          disabled={live.loading || globalPowerLoading}
           className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 disabled:opacity-40"
         >
-          {live.loading ? '⟳ Loading…' : live.error ? '⚠ Retry' : '⟳ Refresh'}
+          {(live.loading || globalPowerLoading) ? '⟳ Loading…' : live.error ? '⚠ Retry' : '⟳ Refresh'}
         </button>
       </div>
 
@@ -433,16 +394,16 @@ export default function MoatOptimizer() {
               {/* Green reward-share bar */}
               <div className="mb-3">
                 <div className="flex justify-between items-baseline mb-1.5">
-                  <span className="text-[10px] text-zinc-500">LIVE Reward Share (v2)</span>
+                  <span className="text-[10px] text-zinc-500">Reward Share</span>
                   <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
-                    {hasResult && live.sqrtSumScaled > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
+                    {hasResult && globalMoatPoints > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
                   </span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: hasResult && live.sqrtSumScaled > 0
+                      width: hasResult && globalMoatPoints > 0
                         ? `${Math.min(Math.max(userShare * 2000, 0.5), 100)}%`
                         : '0%',
                       background: 'linear-gradient(90deg, #4ade80, #22d3ee)',
