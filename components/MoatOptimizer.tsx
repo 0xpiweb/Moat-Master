@@ -195,6 +195,18 @@ export default function MoatOptimizer() {
   // sqrtSumScaled = totalPoints()/1e9 = Σ(√rawPower_tokens × mult_i)
   const userEarningPower = rawPower > 0 ? Math.sqrt(rawPower) * userAvgMult : 0
 
+  // DEBUG — remove once unit mismatch is confirmed resolved
+  if (rawPower > 0 && live.sqrtSumScaled > 0) {
+    console.log('[MoatOptimizer debug]', {
+      rawPower,
+      sqrtRawPower:      Math.sqrt(rawPower),
+      userAvgMult:       +userAvgMult.toFixed(4),
+      userEarningPower:  +userEarningPower.toFixed(2),
+      sqrtSumScaled:     live.sqrtSumScaled,
+      impliedShare_pct:  +((userEarningPower / live.sqrtSumScaled) * 100).toFixed(4),
+    })
+  }
+
   // User Share = User Earning Power / Total Global Earning Power (live from contract)
   const userShare = live.sqrtSumScaled > 0 && userEarningPower > 0
     ? userEarningPower / live.sqrtSumScaled : 0
