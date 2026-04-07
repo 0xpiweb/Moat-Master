@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server'
 import { createPublicClient, http, parseAbi } from 'viem'
 import { avalanche } from 'viem/chains'
 
-// Cache for 1 hour — pool composition changes slowly
-export const revalidate = 3600
+// Force fresh data to clear the "0.14" ghost
+export const revalidate = 0
 
 const MOAT_CONTRACT = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393' as `0x${string}`
-const NORM_1B   = 1_000_000_000
+const NORM_1B = 1_000_000_000
 const MOAT_SCALAR = 27_220
-const LOCK_MULT   = 5          // fixed ×5 for moatPoints (same rule as component)
-const BATCH       = 100        // users per multicall batch
+const BATCH = 100 
 
 function fromWei(wei: bigint): number {
   return Number(wei / 10n ** 16n) / 100
@@ -26,24 +25,16 @@ export async function GET() {
   try {
     const client = createPublicClient({
       chain: avalanche,
-      transport: http(
-        (process.env.AVAX_RPC_URL ?? 'https://api.avax.network/ext/bc/C/rpc').trim(),
-        { timeout: 25_000 },
-      ),
+      transport: http((process.env.AVAX_RPC_URL ?? 'https://api.avax.network/ext/bc/C/rpc').trim()),
     })
 
-    // ── 1. Total active user count ─────────────────────────────────────────
-    const count    = await client.readContract({ address: MOAT_CONTRACT, abi: ABI, functionName: 'getActiveUserCount' })
+    const count = await client.readContract({ address: MOAT_CONTRACT, abi: ABI, functionName: 'getActiveUserCount' })
     const userCount = Number(count)
+    if (userCount === 0) return NextResponse.json({ globalMoatPoints: 0, userCount: 0 })
 
-    if (userCount === 0) {
-      return NextResponse.json({ globalMoatPoints: 0, userCount: 0 })
-    }
-
-    // ── 2. Fetch all addresses in slices of 200 ────────────────────────────
     const addresses: `0x${string}`[] = []
     for (let i = 0; i < userCount; i += 200) {
-      const end   = Math.min(i + 200, userCount)
+      const end = Math.min(i + 200, userCount)
       const slice = await client.readContract({
         address: MOAT_CONTRACT, abi: ABI, functionName: 'getActiveUsers',
         args: [BigInt(i), BigInt(end)],
@@ -51,49 +42,34 @@ export async function GET() {
       addresses.push(...(slice as `0x${string}`[]))
     }
 
-    // ── 3. Multicall userInfo + getUserAllLocks in batches ─────────────────
     let globalMoatPoints = 0
 
     for (let i = 0; i < addresses.length; i += BATCH) {
       const batch = addresses.slice(i, i + BATCH)
-
-      const infoCalls = batch.map(addr => ({
-        address: MOAT_CONTRACT, abi: ABI,
-        functionName: 'userInfo' as const,
-        args: [addr] as [`0x${string}`],
-      }))
-      const lockCalls = batch.map(addr => ({
-        address: MOAT_CONTRACT, abi: ABI,
-        functionName: 'getUserAllLocks' as const,
-        args: [addr] as [`0x${string}`],
-      }))
+      const infoCalls = batch.map(addr => ({ address: MOAT_CONTRACT, abi: ABI, functionName: 'userInfo', args: [addr] }))
+      const lockCalls = batch.map(addr => ({ address: MOAT_CONTRACT, abi: ABI, functionName: 'getUserAllLocks', args: [addr] }))
 
       const [infoRes, lockRes] = await Promise.all([
-        client.multicall({ contracts: infoCalls, allowFailure: true }),
-        client.multicall({ contracts: lockCalls, allowFailure: true }),
+        client.multicall({ contracts: infoCalls as any, allowFailure: true }),
+        client.multicall({ contracts: lockCalls as any, allowFailure: true }),
       ])
 
       for (let j = 0; j < batch.length; j++) {
-        const info  = infoRes[j]
-        const locks = lockRes[j]
-        if (info.status !== 'success' || locks.status !== 'success') continue
-
-        // userInfo → (stakedAmount, totalUserBurn, ...)
-        const [stakedWei, burnedWei] = info.result as [bigint, bigint, bigint, bigint, bigint]
-        // getUserAllLocks → (amounts[], ends[], points[], durations[], updated[], active[])
-        const [lockAmounts, , , , , lockActive] = locks.result as [
-          bigint[], bigint[], bigint[], bigint[], bigint[], boolean[],
-        ]
+        if (infoRes[j].status !== 'success' || lockRes[j].status !== 'success') continue
+        
+        const [stakedWei, burnedWei] = infoRes[j].result as [bigint, bigint, bigint, bigint, bigint]
+        const [lockAmounts, , , , , lockActive] = lockRes[j].result as [bigint[], any, any, any, any, boolean[]]
 
         const staked = fromWei(stakedWei)
         const burned = fromWei(burnedWei)
-        let   locked = 0
+        let locked = 0
         for (let k = 0; k < lockAmounts.length; k++) {
           if (lockActive[k]) locked += fromWei(lockAmounts[k])
         }
 
-        const rawPower = staked + locked * LOCK_MULT + burned * 10
-        if (rawPower > 0) {
+        // FORMULA ALIGNMENT: Match frontend exactly (Stake*1 + Lock*5 + Burn*10)
+        const rawPower = staked + (locked * 5) + (burned * 10)
+        if (rawPower > 0.01) {
           globalMoatPoints += Math.sqrt(rawPower / NORM_1B) * MOAT_SCALAR
         }
       }
@@ -101,7 +77,6 @@ export async function GET() {
 
     return NextResponse.json({ globalMoatPoints: Math.round(globalMoatPoints), userCount })
   } catch (err) {
-    console.error('[global-power]', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
