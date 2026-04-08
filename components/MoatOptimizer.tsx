@@ -100,7 +100,7 @@ export default function MoatOptimizer() {
   const [epochRewards,      setEpochRewards]      = useState(30.41)
   const [epochInput,        setEpochInput]        = useState('30.41')
   const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', loading: true, error: false })
-  const [totalWeight,         setTotalWeight]         = useState(0)
+  const [totalPoints,          setTotalPoints]          = useState(0)
   const [weightedPowerLoading, setWeightedPowerLoading] = useState(true)
 
   const fetchLive = useCallback(async () => {
@@ -120,13 +120,13 @@ export default function MoatOptimizer() {
   }, [])
 
   // Fetches Σ(points_i × avgMultiplier_i) from the Moat API via our server-side proxy.
-  // This totalWeight mirrors the contract's weighted distribution logic exactly.
+  // The route sums the API's `points` field (= moatPoints per user) as the denominator.
   const fetchWeightedPower = useCallback(async () => {
     setWeightedPowerLoading(true)
     try {
       const res  = await fetch('/api/moat-weighted-power')
-      const data = await res.json() as { totalWeight: number; participantCount: number }
-      if (data.totalWeight > 0) setTotalWeight(data.totalWeight)
+      const data = await res.json() as { totalPoints: number; participantCount: number }
+      if (data.totalPoints > 0) setTotalPoints(data.totalPoints)
     } catch { /* keep 0 — hasLiveData guard will hide results */ }
     finally { setWeightedPowerLoading(false) }
   }, [])
@@ -167,20 +167,17 @@ export default function MoatOptimizer() {
     ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
     : 0
 
-  // Weighted reward share — mirrors contract distribution:
-  //   userWeight  = moatPoints × avgMultiplier (user's simulated position)
-  //   totalWeight = Σ(points_i × avgMultiplier_i) from live Moat API
-  //   share       = userWeight / totalWeight
-  //   dailyYield  = share × PULSE_AVAX × PULSES_PER_DAY
-  const userWeight = moatPoints * userAvgMult
-  const userShare  = totalWeight > 0 && userWeight > 0
-    ? userWeight / totalWeight : 0
+  // Reward share — moatPoints already encodes all multipliers via the sqrt formula.
+  // The Fortifi API's `points` field matches this value; K in weight=points/K cancels.
+  // Formula: share = moatPoints / Σ(points_i) from live Moat API
+  const userShare  = totalPoints > 0 && moatPoints > 0
+    ? moatPoints / totalPoints : 0
 
   const dailyYield       = userShare * PULSE_AVAX * PULSES_PER_DAY
   const epochYieldResult = dailyYield * 14
 
   const hasResult   = rawPower > 0
-  const hasLiveData = totalWeight > 0
+  const hasLiveData = totalPoints > 0
 
   // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
@@ -400,14 +397,14 @@ export default function MoatOptimizer() {
                 <div className="flex justify-between items-baseline mb-1.5">
                   <span className="text-[10px] text-zinc-500">Reward Share</span>
                   <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
-                    {hasResult && totalWeight > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
+                    {hasResult && totalPoints > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
                   </span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: hasResult && totalWeight > 0
+                      width: hasResult && totalPoints > 0
                         ? `${Math.min(Math.max(userShare * 2000, 0.5), 100)}%`
                         : '0%',
                       background: 'linear-gradient(90deg, #4ade80, #22d3ee)',

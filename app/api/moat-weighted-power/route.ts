@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export const revalidate = 60
 
 const MOAT_CONTRACT = '0x7A4D20261a765Bd9bA67D49FBf8189843eEC3393'
-const MOAT_API_URL = `https://moat-api.fortifi.network/api/moat-points/all?contractAddress=${MOAT_CONTRACT}`
+const MOAT_API_URL  = `https://moat-api.fortifi.network/api/moat-points/all?contractAddress=${MOAT_CONTRACT}`
 
 export async function GET() {
   try {
@@ -13,20 +13,13 @@ export async function GET() {
     const data = await res.json()
     if (!Array.isArray(data)) throw new Error('Invalid response format from Fortifi')
 
-    // System calculation: Precise iteration through participants
-    const totalWeight = data.reduce((acc, p) => {
-      // Logic: Ensure we capture points and multiplier regardless of key casing
-      const points = parseFloat(p.points || p.total_points || p.totalPoints || 0)
-      const multiplier = parseFloat(p.avgMultiplier || p.multiplier || 1)
-      return acc + (points * multiplier)
-    }, 0)
+    // `weight` in the API equals `points / K` for a fixed constant K.
+    // K cancels in the share ratio, so summing points directly gives the cleanest
+    // denominator — no magic constant needed in either the route or the frontend.
+    const totalPoints = data.reduce((acc: number, p: { points: number }) => acc + (Number(p.points) || 0), 0)
 
-    return NextResponse.json({ 
-      totalWeight: Math.round(totalWeight), 
-      participantCount: data.length 
-    })
+    return NextResponse.json({ totalPoints, participantCount: data.length })
   } catch (err) {
-    console.error('[System Error]', err)
-    return NextResponse.json({ error: 'Failed to synchronize weighted power' }, { status: 500 })
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
