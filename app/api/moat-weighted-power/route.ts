@@ -8,36 +8,25 @@ const MOAT_API_URL = `https://moat-api.fortifi.network/api/moat-points/all?contr
 export async function GET() {
   try {
     const res = await fetch(MOAT_API_URL, { next: { revalidate: 60 } })
-
-    if (!res.ok) {
-      return NextResponse.json({ error: `Moat API error: ${res.status}` }, { status: 500 })
-    }
+    if (!res.ok) throw new Error(`Fortifi API responded with ${res.status}`)
 
     const data = await res.json()
+    if (!Array.isArray(data)) throw new Error('Invalid response format from Fortifi')
 
-    if (!Array.isArray(data)) {
-      return NextResponse.json({ error: 'Unexpected response shape from Moat API' }, { status: 500 })
-    }
-
-    // Robust calculation that handles naming variations
+    // System calculation: Precise iteration through participants
     const totalWeight = data.reduce((acc, p) => {
-      // API might use 'points', 'totalPoints', 'points_balance'
-      const pts = Number(p.points || p.totalPoints || p.points_balance) || 0
-      // API might use 'avgMultiplier', 'multiplier', 'current_multiplier'
-      const mult = Number(p.avgMultiplier || p.multiplier || p.current_multiplier) || 1
-      
-      return acc + (pts * mult)
+      // Logic: Ensure we capture points and multiplier regardless of key casing
+      const points = parseFloat(p.points || p.total_points || p.totalPoints || 0)
+      const multiplier = parseFloat(p.avgMultiplier || p.multiplier || 1)
+      return acc + (points * multiplier)
     }, 0)
 
-    // Log to Vercel console so we can see the raw data if it still fails
-    console.log(`[Moat API] Processed ${data.length} participants. Total Weight: ${totalWeight}`);
-
     return NextResponse.json({ 
-      totalWeight: totalWeight || 1, // Fallback to 1 to avoid division by zero in UI
+      totalWeight: Math.round(totalWeight), 
       participantCount: data.length 
     })
   } catch (err) {
-    console.error("[Moat API Error]", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+    console.error('[System Error]', err)
+    return NextResponse.json({ error: 'Failed to synchronize weighted power' }, { status: 500 })
   }
 }
