@@ -40,16 +40,13 @@ const GLOBAL_REWARD_POWER = 3_942_855_424
 
 // Ecosystem snapshot
 const TOTAL_SUPPLY  = 1_350_000_000
-const GLOBAL_STAKED =   155_693_804
-const GLOBAL_LOCKED =   152_330_218
-const GLOBAL_BURNED =   321_438_924
-const MOAT_DENSITY  = ((GLOBAL_STAKED + GLOBAL_LOCKED + GLOBAL_BURNED) / TOTAL_SUPPLY * 100).toFixed(2)
 
 
 const MOAT_ABI = parseAbi([
   'function userInfo(address) view returns (uint256 stakedAmount, uint256 totalUserBurn, uint256 stakingPoints, uint256 burnPoints, uint256 activeLockCount)',
   'function getUserAllLocks(address) view returns (uint256[] amounts, uint256[] ends, uint256[] points, uint256[] originalDurations, uint256[] lastUpdated, bool[] active)',
   'function getAllPendingRewards(address) view returns (address[] tokens, uint256[] amounts)',
+  'function getTotalAmounts() view returns (uint256 totalStaked, uint256 totalLocked, uint256 totalBurned, uint256 totalInContract)',
 ] as const)
 
 // ── Lock multiplier (piecewise linear) ────────────────────────────────────────
@@ -114,6 +111,31 @@ export default function RewardChecker() {
   const [error,          setError]          = useState<string | null>(null)
   const [result,         setResult]         = useState<CheckResult | null>(null)
   const [countdown,      setCountdown]      = useState<Countdown>({ hours: 0, mins: 0, epochPct: 0, daysLeft: 0 })
+  const [globalDensity,  setGlobalDensity]  = useState('—')
+  const [globalStaked,   setGlobalStaked]   = useState(0)
+  const [globalLocked,   setGlobalLocked]   = useState(0)
+  const [globalBurned,   setGlobalBurned]   = useState(0)
+  const [densityLoading, setDensityLoading] = useState(true)
+
+  // ── Live global Moat totals (same source as MoatSimulator) ────────────────
+  useEffect(() => {
+    const client = createPublicClient({
+      chain: avalanche,
+      transport: http('https://api.avax.network/ext/bc/C/rpc'),
+    })
+    client.readContract({ address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getTotalAmounts' })
+      .then(([s, l, b]) => {
+        const staked = fmtE(s)
+        const locked = fmtE(l)
+        const burned = fmtE(b)
+        setGlobalStaked(staked)
+        setGlobalLocked(locked)
+        setGlobalBurned(burned)
+        setGlobalDensity(((staked + locked + burned) / TOTAL_SUPPLY * 100).toFixed(2))
+        setDensityLoading(false)
+      })
+      .catch(() => setDensityLoading(false))
+  }, [])
 
   // ── Live countdown + epoch progress ───────────────────────────────────────
   useEffect(() => {
@@ -346,12 +368,16 @@ export default function RewardChecker() {
               <div className="flex flex-col justify-center flex-1 pt-2">
                 <p className="text-[10px] text-zinc-500 mb-1">Global Moat Density</p>
                 <span className="text-xl font-black [text-shadow:none] leading-tight text-white">
-                  {MOAT_DENSITY}%
+                  {densityLoading ? '…' : `${globalDensity}%`}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  Staked <span className="font-semibold" style={{ color: '#67e8f9' }}>{fmtPwr(GLOBAL_STAKED)}</span>
-                  {' · '}Locked <span className="font-semibold" style={{ color: '#a78bfa' }}>{fmtPwr(GLOBAL_LOCKED)}</span>
-                  {' · '}Burned <span className="font-semibold" style={{ color: '#fb923c' }}>{fmtPwr(GLOBAL_BURNED)}</span>
+                  {densityLoading ? 'fetching…' : (
+                    <>
+                      Staked <span className="font-semibold" style={{ color: '#67e8f9' }}>{fmtPwr(globalStaked)}</span>
+                      {' · '}Locked <span className="font-semibold" style={{ color: '#a78bfa' }}>{fmtPwr(globalLocked)}</span>
+                      {' · '}Burned <span className="font-semibold" style={{ color: '#fb923c' }}>{fmtPwr(globalBurned)}</span>
+                    </>
+                  )}
                 </span>
               </div>
               <div className="border-t border-zinc-800 my-2" />

@@ -325,9 +325,9 @@ export default function MoatOptimizer() {
             </div>
           </div>
 
-          {/* Estimated Epoch Rewards — auto-fetched from last deposit, user-editable */}
+          {/* Epoch Rewards — auto-fetched from last deposit, user-editable */}
           <div className="mt-auto pt-2">
-            <label className={labelCls}>Estimated Epoch Rewards</label>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Epoch Rewards</p>
             <div className="relative">
               <input
                 type="number" min="0" step="0.01"
