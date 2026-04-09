@@ -357,7 +357,7 @@ export default async function TokenDashboard(
         style={{
           ...(hasCustomBg ? { zIndex: 4 } : {}),
           backgroundAttachment: 'fixed',
-          backgroundPosition:   'center top',
+          backgroundPosition:   'top center',
           backgroundSize:       'cover',
         }}
       >
@@ -369,8 +369,8 @@ export default async function TokenDashboard(
         )}
 
         {/* ── Site header — absolute top, scrolls away naturally ──────── */}
-        <div className="absolute top-0 left-0 right-0 z-50 backdrop-blur-sm h-[100px] flex items-center">
-          <div className="w-full max-w-6xl mx-auto px-4 flex items-center justify-between gap-4">
+        <div className="absolute top-0 left-0 right-0 z-50">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <h1 className={titleClass}>
               <div
                 className={logoRingClass}
@@ -402,7 +402,7 @@ export default async function TokenDashboard(
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 pt-[160px] pb-10">
+        <div className="max-w-6xl mx-auto px-4 pt-6 pb-10">
 
           {/* Supply info + live dot */}
           <div className="mb-6">
