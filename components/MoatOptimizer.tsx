@@ -239,11 +239,11 @@ export default function MoatOptimizer() {
       </div>
 
       {/* ── Row 1: Inputs + Multiplier Table ─────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         {/* Left — Build Your Strategy */}
-        <div className="flex flex-col gap-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Build Your Strategy</p>
+        <div className="flex flex-col gap-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Build Your Strategy</p>
 
           {/* Stake row */}
           <div className="flex flex-col gap-1">
@@ -263,7 +263,7 @@ export default function MoatOptimizer() {
           </div>
 
           {/* Lock row + slider */}
-          <div className="flex flex-col gap-1 mt-2">
+          <div className="flex flex-col gap-1 mt-10">
             <div className="flex gap-2 items-center">
               <div
                 className="flex-shrink-0 w-[88px] py-2.5 rounded-xl text-xs font-bold border inline-flex items-center justify-center gap-1.5 [text-shadow:none]"
@@ -278,7 +278,7 @@ export default function MoatOptimizer() {
               />
             </div>
             {/* Lock duration slider — always visible */}
-            <div className="mt-2 pl-[96px]">
+            <div className="mt-4 pl-[96px]">
               <div className="flex justify-between items-baseline mb-2">
                 <label className={labelCls + ' mb-0'}>Lock Duration</label>
                 <span className="text-sm font-black text-white [text-shadow:none]" style={{ letterSpacing: '-0.01em' }}>
@@ -350,8 +350,8 @@ export default function MoatOptimizer() {
 
         </div>
 
-        {/* Right — Multiplier Table */}
-        <div className="flex flex-col gap-3">
+        {/* Right — Multiplier Table (desktop only) */}
+        <div className="hidden lg:flex flex-col gap-3">
           <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Multiplier Table</p>
           <div className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden flex-1">
             <table className="w-full text-xs">
