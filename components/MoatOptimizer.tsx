@@ -263,7 +263,7 @@ export default function MoatOptimizer() {
           </div>
 
           {/* Lock row + slider */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 mt-2">
             <div className="flex gap-2 items-center">
               <div
                 className="flex-shrink-0 w-[88px] py-2.5 rounded-xl text-xs font-bold border inline-flex items-center justify-center gap-1.5 [text-shadow:none]"
@@ -309,7 +309,7 @@ export default function MoatOptimizer() {
           </div>
 
           {/* Burn row */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 mt-10">
             <div className="flex gap-2 items-center">
               <div
                 className="flex-shrink-0 w-[88px] py-2.5 rounded-xl text-xs font-bold border inline-flex items-center justify-center gap-1.5 [text-shadow:none]"

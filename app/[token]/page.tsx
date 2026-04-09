@@ -364,13 +364,7 @@ export default async function TokenDashboard(
         )}
 
         {/* ── Sticky site header — always pinned to top of viewport ─────── */}
-        <div
-          className="sticky top-0 z-50 backdrop-blur-md"
-          style={{
-            backgroundColor: isDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.82)',
-            borderBottom:    isDark ? '2px solid rgba(0,0,0,0.10)' : '1px solid rgba(255,255,255,0.06)',
-          }}
-        >
+        <div className="sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <h1 className={titleClass}>
               <div
