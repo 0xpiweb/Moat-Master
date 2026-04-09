@@ -363,11 +363,15 @@ export default async function TokenDashboard(
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto px-4 py-10">
-
-          {/* Header */}
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <div className="min-w-0">
+        {/* ── Sticky site header — always pinned to top of viewport ─────── */}
+        <div
+          className="sticky top-0 z-50 backdrop-blur-md"
+          style={{
+            backgroundColor: isDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.82)',
+            borderBottom:    isDark ? '2px solid rgba(0,0,0,0.10)' : '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <h1 className={titleClass}>
               <div
                 className={logoRingClass}
@@ -377,6 +381,32 @@ export default async function TokenDashboard(
               </div>
               {cfg.name}
             </h1>
+            {theme?.communityTools && theme.communityTools.length > 0 && (
+              <nav className="flex flex-row items-center gap-2 flex-shrink-0 flex-nowrap overflow-x-auto">
+                {theme.communityTools.map(tool => (
+                  <a
+                    key={tool.id}
+                    href={`#${tool.id}`}
+                    className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105 whitespace-nowrap flex-shrink-0"
+                    style={{
+                      backgroundColor: 'rgba(34,211,238,0.12)',
+                      borderColor:     'rgba(34,211,238,0.45)',
+                      color:           '#67e8f9',
+                      boxShadow:       '0 0 8px rgba(34,211,238,0.1)',
+                    }}
+                  >
+                    {tool.label}
+                  </a>
+                ))}
+              </nav>
+            )}
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 pt-6 pb-10">
+
+          {/* Supply info + live dot */}
+          <div className="mb-6">
             <p className={supplyLabelClass}>
               <span>
                 Total Supply:{' '}
@@ -392,26 +422,6 @@ export default async function TokenDashboard(
                 <span className={dotLabelClass}>Live Network</span>
               </span>
             </p>
-            </div>
-            {theme?.communityTools && theme.communityTools.length > 0 && (
-              <nav className="hidden sm:flex flex-row items-start gap-2 pt-1 flex-shrink-0">
-                {theme.communityTools.map(tool => (
-                  <a
-                    key={tool.id}
-                    href={`#${tool.id}`}
-                    className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105 whitespace-nowrap"
-                    style={{
-                      backgroundColor: 'rgba(34,211,238,0.12)',
-                      borderColor:     'rgba(34,211,238,0.45)',
-                      color:           '#67e8f9',
-                      boxShadow:       '0 0 8px rgba(34,211,238,0.1)',
-                    }}
-                  >
-                    {tool.label}
-                  </a>
-                ))}
-              </nav>
-            )}
           </div>
 
           {/* Market Metrics */}

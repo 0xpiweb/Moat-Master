@@ -84,10 +84,20 @@ function getMultiplier(strategy: Strategy, days: number): number {
 }
 
 // Key quick-select durations (subset of official breakpoints)
-const QUICK_SELECT = [7, 30, 90, 180, 365, 450, 540, 660, 730]
+const QUICK_SELECT = [7, 30, 90, 180, 365, 450, 540, 730]
+
+function fmtPwr(n: number): string {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B'
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'
+  return n.toFixed(0)
+}
 
 interface LiveData {
   moatDensity: string
+  staked:      number
+  locked:      number
+  burned:      number
   loading:     boolean
   error:       boolean
 }
@@ -99,7 +109,7 @@ export default function MoatOptimizer() {
   const [days,        setDays]        = useState(365)
   const [epochRewards,      setEpochRewards]      = useState(30.41)
   const [epochInput,        setEpochInput]        = useState('30.41')
-  const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', loading: true, error: false })
+  const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', staked: 0, locked: 0, burned: 0, loading: true, error: false })
   const [totalPoints,          setTotalPoints]          = useState(0)
   const [totalWeightedPoints,  setTotalWeightedPoints]  = useState(0)
   const [weightedPowerLoading, setWeightedPowerLoading] = useState(true)
@@ -111,10 +121,11 @@ export default function MoatOptimizer() {
       const [s, l, b] = await client.readContract({
         address: MOAT_CONTRACT, abi: MOAT_ABI, functionName: 'getTotalAmounts',
       })
-      const moatDensity = (
-        (fromWei(s) + fromWei(l) + fromWei(b)) / TOTAL_SUPPLY * 100
-      ).toFixed(2)
-      setLive({ moatDensity, loading: false, error: false })
+      const staked = fromWei(s)
+      const locked = fromWei(l)
+      const burned = fromWei(b)
+      const moatDensity = ((staked + locked + burned) / TOTAL_SUPPLY * 100).toFixed(2)
+      setLive({ moatDensity, staked, locked, burned, loading: false, error: false })
     } catch {
       setLive(d => ({ ...d, loading: false, error: true }))
     }
@@ -249,7 +260,6 @@ export default function MoatOptimizer() {
                 className={inputCls}
               />
             </div>
-            <p className="text-[10px] text-zinc-600 pl-[96px]">1× points · 1× reward mult</p>
           </div>
 
           {/* Lock row + slider */}
@@ -267,7 +277,6 @@ export default function MoatOptimizer() {
                 className={inputCls}
               />
             </div>
-            <p className="text-[10px] text-zinc-600 pl-[96px]">5× points (fixed) · <span style={{ color: PINK }}>{lockMult.toFixed(2)}×</span> reward mult</p>
             {/* Lock duration slider — always visible */}
             <div className="mt-2 pl-[96px]">
               <div className="flex justify-between items-baseline mb-2">
@@ -314,7 +323,6 @@ export default function MoatOptimizer() {
                 className={inputCls}
               />
             </div>
-            <p className="text-[10px] text-zinc-600 pl-[96px]">10× points · 10× reward mult</p>
           </div>
 
           {/* Estimated Epoch Rewards — auto-fetched from last deposit, user-editable */}
@@ -362,7 +370,7 @@ export default function MoatOptimizer() {
                   <td className="px-3 py-2 text-zinc-500">—</td>
                   <td className="px-3 py-2 text-right font-bold text-white">1.00×</td>
                 </tr>
-                {BREAKPOINTS.filter(row => ![1, 700, 729].includes(row.days)).map(row => {
+                {BREAKPOINTS.filter(row => ![1, 450, 600, 660, 700, 729].includes(row.days)).map(row => {
                   const active = days === row.days
                   return (
                     <tr key={row.days} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => setDays(row.days)}>
@@ -463,7 +471,13 @@ export default function MoatOptimizer() {
                   {live.loading ? '…' : `${live.moatDensity}%`}
                 </span>
                 <span className="text-[10px] text-zinc-600 mt-0.5">
-                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : 'of supply secured · live'}
+                  {live.loading ? 'fetching…' : live.error ? 'retry ↑' : (
+                    <>
+                      Staked <span className="font-semibold" style={{ color: '#67e8f9' }}>{fmtPwr(live.staked)}</span>
+                      {' · '}Locked <span className="font-semibold" style={{ color: '#a78bfa' }}>{fmtPwr(live.locked)}</span>
+                      {' · '}Burned <span className="font-semibold" style={{ color: '#fb923c' }}>{fmtPwr(live.burned)}</span>
+                    </>
+                  )}
                 </span>
               </div>
               <div className="border-t border-zinc-800 my-2" />
