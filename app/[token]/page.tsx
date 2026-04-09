@@ -353,7 +353,7 @@ export default async function TokenDashboard(
       )}
 
       <main
-        className={`relative min-h-screen ${hasCustomBg ? 'bg-transparent' : 'bg-black'} ${isDark ? 'text-black' : 'text-white'}`}
+        className={`relative min-h-screen bg-fixed bg-cover bg-right-top ${hasCustomBg ? 'bg-transparent' : 'bg-black'} ${isDark ? 'text-black' : 'text-white'}`}
         style={hasCustomBg ? { zIndex: 4 } : undefined}
       >
         {/* Top stripe (BENSI pop-art) */}
@@ -363,8 +363,8 @@ export default async function TokenDashboard(
           </div>
         )}
 
-        {/* ── Sticky site header — always pinned to top of viewport ─────── */}
-        <div className="sticky top-0 z-50">
+        {/* ── Site header — absolute top, scrolls away naturally ──────── */}
+        <div className="absolute top-0 left-0 right-0 z-50">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <h1 className={titleClass}>
               <div
@@ -575,7 +575,7 @@ export default async function TokenDashboard(
           {theme?.communityTools?.some(t => t.id === 'moat-explorer') && (
             <div
               id="moat-explorer"
-              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-4 min-h-[140px] flex flex-col gap-3"
+              className="bg-zinc-900/50 backdrop-blur-xl border rounded-2xl p-6 mt-8 min-h-[140px] flex flex-col gap-3"
               style={{ borderColor: `rgba(${cfg.colorRgb},0.45)` }}
             >
               <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: cfg.color }}>Moat Explorer</p>
