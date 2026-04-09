@@ -353,7 +353,7 @@ export default async function TokenDashboard(
       )}
 
       <main
-        className={`relative min-h-screen bg-fixed bg-cover bg-right-top ${hasCustomBg ? 'bg-transparent' : 'bg-black'} ${isDark ? 'text-black' : 'text-white'}`}
+        className={`relative min-h-screen bg-fixed bg-cover bg-top ${hasCustomBg ? 'bg-transparent' : 'bg-black'} ${isDark ? 'text-black' : 'text-white'}`}
         style={hasCustomBg ? { zIndex: 4 } : undefined}
       >
         {/* Top stripe (BENSI pop-art) */}
@@ -364,7 +364,7 @@ export default async function TokenDashboard(
         )}
 
         {/* ── Site header — absolute top, scrolls away naturally ──────── */}
-        <div className="absolute top-0 left-0 right-0 z-50">
+        <div className="absolute top-0 left-0 right-0 z-50 backdrop-blur-sm min-h-[100px] pb-6">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <h1 className={titleClass}>
               <div
@@ -397,7 +397,7 @@ export default async function TokenDashboard(
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 pt-6 pb-10">
+        <div className="max-w-6xl mx-auto px-4 pt-6 pb-10 mt-12">
 
           {/* Supply info + live dot */}
           <div className="mb-6">
