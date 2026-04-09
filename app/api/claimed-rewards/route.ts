@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     }
 
     // Convert wei → AVAX (18 decimals)
-    const alreadyClaimed = Number(totalWei / 10n ** 16n) / 100
+    const alreadyClaimed = Number(totalWei) / 1e18
 
     return NextResponse.json({ alreadyClaimed })
   } catch (err) {

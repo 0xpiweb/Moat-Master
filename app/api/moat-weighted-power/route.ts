@@ -13,12 +13,23 @@ export async function GET() {
     const data = await res.json()
     if (!Array.isArray(data)) throw new Error('Invalid response format from Fortifi')
 
-    // `weight` in the API equals `points / K` for a fixed constant K.
-    // K cancels in the share ratio, so summing points directly gives the cleanest
-    // denominator — no magic constant needed in either the route or the frontend.
-    const totalPoints = data.reduce((acc: number, p: { points: number }) => acc + (Number(p.points) || 0), 0)
+    // "Unified Pool" denominator:
+    //   totalPoints         = Σ(points_i)
+    //   totalWeightedPoints = Σ(points_i × boostMultiplier_i)
+    //
+    // User share = (moatPoints + moatPoints × avgMult) / (totalPoints + totalWeightedPoints)
+    //            = moatPoints × (1 + avgMult) / (totalPoints + totalWeightedPoints)
+    let totalPoints         = 0
+    let totalWeightedPoints = 0
 
-    return NextResponse.json({ totalPoints, participantCount: data.length })
+    for (const p of data) {
+      const pts  = Number(p.points)          || 0
+      const mult = Number(p.boostMultiplier) || 0
+      totalPoints         += pts
+      totalWeightedPoints += pts * mult
+    }
+
+    return NextResponse.json({ totalPoints, totalWeightedPoints, participantCount: data.length })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }

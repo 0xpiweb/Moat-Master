@@ -101,6 +101,7 @@ export default function MoatOptimizer() {
   const [epochInput,        setEpochInput]        = useState('30.41')
   const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', loading: true, error: false })
   const [totalPoints,          setTotalPoints]          = useState(0)
+  const [totalWeightedPoints,  setTotalWeightedPoints]  = useState(0)
   const [weightedPowerLoading, setWeightedPowerLoading] = useState(true)
 
   const fetchLive = useCallback(async () => {
@@ -125,8 +126,11 @@ export default function MoatOptimizer() {
     setWeightedPowerLoading(true)
     try {
       const res  = await fetch('/api/moat-weighted-power')
-      const data = await res.json() as { totalPoints: number; participantCount: number }
-      if (data.totalPoints > 0) setTotalPoints(data.totalPoints)
+      const data = await res.json() as { totalPoints: number; totalWeightedPoints: number; participantCount: number }
+      if (data.totalPoints > 0) {
+        setTotalPoints(data.totalPoints)
+        setTotalWeightedPoints(data.totalWeightedPoints)
+      }
     } catch { /* keep 0 — hasLiveData guard will hide results */ }
     finally { setWeightedPowerLoading(false) }
   }, [])
@@ -167,17 +171,23 @@ export default function MoatOptimizer() {
     ? (stake * 1 + lock * lockMult + burn * 10) / totalTokens
     : 0
 
-  // Reward share — moatPoints already encodes all multipliers via the sqrt formula.
-  // The Fortifi API's `points` field matches this value; K in weight=points/K cancels.
-  // Formula: share = moatPoints / Σ(points_i) from live Moat API
-  const userShare  = totalPoints > 0 && moatPoints > 0
-    ? moatPoints / totalPoints : 0
+  // "Unified Pool" reward share formula:
+  //   userContribution = moatPoints × (1 + userAvgMult)
+  //   denominator      = Σ(points_i) + Σ(points_i × boostMult_i)  [from Fortifi API]
+  //   share            = userContribution / denominator
+  //
+  // Both raw and multiplier-weighted points flow into the same pool denominator,
+  // which is the actual distribution mechanic the contract uses.
+  const denominator    = totalPoints + totalWeightedPoints
+  const userContribution = moatPoints > 0 ? moatPoints * (1 + userAvgMult) : 0
+  const userShare      = denominator > 0 && userContribution > 0
+    ? userContribution / denominator : 0
 
   const dailyYield       = userShare * PULSE_AVAX * PULSES_PER_DAY
   const epochYieldResult = dailyYield * 14
 
   const hasResult   = rawPower > 0
-  const hasLiveData = totalPoints > 0
+  const hasLiveData = denominator > 0
 
   // Slider gradient
   const fillPct = ((days - 1) / 729) * 100
@@ -397,14 +407,14 @@ export default function MoatOptimizer() {
                 <div className="flex justify-between items-baseline mb-1.5">
                   <span className="text-[10px] text-zinc-500">Reward Share</span>
                   <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
-                    {hasResult && totalPoints > 0 ? `${(userShare * 100).toFixed(4)}%` : '—'}
+                    {hasResult && hasLiveData ? `${(userShare * 100).toFixed(4)}%` : '—'}
                   </span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: hasResult && totalPoints > 0
+                      width: hasResult && hasLiveData
                         ? `${Math.min(Math.max(userShare * 2000, 0.5), 100)}%`
                         : '0%',
                       background: 'linear-gradient(90deg, #4ade80, #22d3ee)',
