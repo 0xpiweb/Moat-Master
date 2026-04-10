@@ -402,7 +402,7 @@ export default async function TokenDashboard(
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 pt-6 pb-10">
+        <div className="max-w-6xl mx-auto px-4 pt-20 pb-10">
 
           {/* Supply info + live dot */}
           <div className="mb-6">
