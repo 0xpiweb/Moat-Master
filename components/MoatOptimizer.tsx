@@ -197,6 +197,13 @@ export default function MoatOptimizer() {
   const dailyYield       = userShare * PULSE_AVAX * PULSES_PER_DAY
   const epochYieldResult = dailyYield * 14
 
+  // Est. Rewards: moatWeight × (1 + boost)
+  // moatWeight = user's base share (%) without multiplier
+  // calculatedBoost: if avgMult ≥ 1 (e.g. 9.93×), divide by 10 to get ratio (0.993); else use as-is
+  const moatWeight        = totalPoints > 0 && moatPoints > 0 ? (moatPoints / totalPoints) * 100 : 0
+  const calculatedBoost   = userAvgMult >= 1 ? userAvgMult / 10 : userAvgMult
+  const estRewardsPercent = moatWeight > 0 ? moatWeight * (1 + calculatedBoost) : 0
+
   const hasResult   = rawPower > 0
   const hasLiveData = denominator > 0
 
@@ -415,7 +422,7 @@ export default function MoatOptimizer() {
                 <div className="flex justify-between items-baseline mb-1.5">
                   <span className="text-[10px] text-zinc-500">Reward Share</span>
                   <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
-                    {hasResult && hasLiveData ? `${(userShare * 100).toFixed(4)}%` : '—'}
+                    {hasResult && totalPoints > 0 ? `${estRewardsPercent.toFixed(2)}%` : '—'}
                   </span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
