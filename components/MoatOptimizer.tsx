@@ -107,8 +107,8 @@ export default function MoatOptimizer() {
   const [lockAmount,  setLockAmount]  = useState('')
   const [burnAmount,  setBurnAmount]  = useState('')
   const [days,        setDays]        = useState(365)
-  const [epochRewards,      setEpochRewards]      = useState(30.41)
-  const [epochInput,        setEpochInput]        = useState('30.41')
+  const [epochRewards,      setEpochRewards]      = useState(29.55)
+  const [epochInput,        setEpochInput]        = useState('29.55')
   const [live,              setLive]              = useState<LiveData>({ moatDensity: '—', staked: 0, locked: 0, burned: 0, loading: true, error: false })
   const [totalPoints,          setTotalPoints]          = useState(0)
   const [totalWeightedPoints,  setTotalWeightedPoints]  = useState(0)
@@ -152,7 +152,7 @@ export default function MoatOptimizer() {
       const { avax, source } = await res.json() as { avax: number; source: string }
       // Only update if the chain value is larger than what we already have.
       // This prevents a small recent deposit (e.g. ~11 AVAX) from clobbering the
-      // 30.41 default when the true epoch pool is higher.
+      // 29.55 default when the true epoch pool is higher.
       if (source === 'chain' && avax > 0) {
         setEpochRewards(prev => avax > prev ? avax : prev)
         setEpochInput(prev => avax > parseFloat(prev) ? avax.toFixed(2) : prev)
@@ -201,7 +201,7 @@ export default function MoatOptimizer() {
   const calculatedBoost   = userAvgMult >= 1 ? userAvgMult / 10 : userAvgMult
   const estRewardsPercent = moatWeight > 0 ? moatWeight * (1 + calculatedBoost) : 0
 
-  const DAILY_POOL       = 30.41 / 14  // 2.308 AVAX — bi-weekly epoch pool ÷ 14 days
+  const DAILY_POOL       = 29.55 / 14  // 2.111 AVAX — bi-weekly epoch pool ÷ 14 days
   const dailyYield       = totalPoints > 0 ? (estRewardsPercent / 100) * DAILY_POOL : 0
   const epochYieldResult = dailyYield * 14
 
