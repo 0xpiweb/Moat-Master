@@ -194,15 +194,16 @@ export default function MoatOptimizer() {
   const userShare      = denominator > 0 && userContribution > 0
     ? userContribution / denominator : 0
 
-  const dailyYield       = userShare * PULSE_AVAX * PULSES_PER_DAY
-  const epochYieldResult = dailyYield * 14
-
   // Est. Rewards: moatWeight × (1 + boost)
   // moatWeight = user's base share (%) without multiplier
   // calculatedBoost: if avgMult ≥ 1 (e.g. 9.93×), divide by 10 to get ratio (0.993); else use as-is
   const moatWeight        = totalPoints > 0 && moatPoints > 0 ? (moatPoints / totalPoints) * 100 : 0
   const calculatedBoost   = userAvgMult >= 1 ? userAvgMult / 10 : userAvgMult
   const estRewardsPercent = moatWeight > 0 ? moatWeight * (1 + calculatedBoost) : 0
+
+  const DAILY_POOL       = 30.41 / 14  // 2.308 AVAX — bi-weekly epoch pool ÷ 14 days
+  const dailyYield       = totalPoints > 0 ? (estRewardsPercent / 100) * DAILY_POOL : 0
+  const epochYieldResult = dailyYield * 14
 
   const hasResult   = rawPower > 0
   const hasLiveData = denominator > 0
