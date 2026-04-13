@@ -10,6 +10,7 @@ import SupplyBar from '@/components/SupplyBar'
 import MarketTicker, { type MarketData } from '@/components/MarketTicker'
 import MoatOptimizer  from '@/components/MoatOptimizer'
 import RewardChecker  from '@/components/RewardChecker'
+import HamburgerNav   from '@/components/HamburgerNav'
 
 export const revalidate = 60
 
@@ -381,23 +382,7 @@ export default async function TokenDashboard(
               {cfg.name}
             </h1>
             {theme?.communityTools && theme.communityTools.length > 0 && (
-              <nav className="flex flex-row items-center gap-2 flex-shrink-0 flex-nowrap overflow-x-auto">
-                {theme.communityTools.map(tool => (
-                  <a
-                    key={tool.id}
-                    href={`#${tool.id}`}
-                    className="text-xs font-semibold px-4 py-1.5 rounded-full border transition-all hover:scale-105 whitespace-nowrap flex-shrink-0"
-                    style={{
-                      backgroundColor: 'rgba(34,211,238,0.12)',
-                      borderColor:     'rgba(34,211,238,0.45)',
-                      color:           '#67e8f9',
-                      boxShadow:       '0 0 8px rgba(34,211,238,0.1)',
-                    }}
-                  >
-                    {tool.label}
-                  </a>
-                ))}
-              </nav>
+              <HamburgerNav tools={theme.communityTools} />
             )}
           </div>
         </div>
