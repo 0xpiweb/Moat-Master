@@ -14,7 +14,7 @@ const DOMAIN_SLUG: Record<string, string> = {
   'vitrene-hub.vercel.app':    'vitrene',
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const host = request.headers.get('host')?.split(':')[0] ?? ''
   const slug = DOMAIN_SLUG[host]
 
