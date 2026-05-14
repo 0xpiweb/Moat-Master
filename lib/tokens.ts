@@ -99,9 +99,9 @@ export const TOKENS: Record<string, TokenConfig> = {
       ],
     },
     rewards: [
-      { label: 'Epoch 29 Rewards',   amount: '29.63 $AVAX',    period: '4/27 - 5/10' },
-      { label: 'Moat Total Rewards', amount: '120.19 $AVAX',   period: 'Cumulative since 3/16' },
-      { label: 'Lifetime Rewards',   amount: '2,095.40 $AVAX', period: 'Total ecosystem value distributed' },
+      { label: 'Epoch 30 Rewards',   amount: '28.63 $AVAX',    period: '5/11 - 5/24' },
+      { label: 'Moat Total Rewards', amount: '148.82 $AVAX',   period: 'Cumulative since 3/16' },
+      { label: 'Lifetime Rewards',   amount: '2,124.03 $AVAX', period: 'Total ecosystem value distributed' },
     ],
   },
   SUPER: {
