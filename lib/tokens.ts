@@ -82,7 +82,7 @@ export const TOKENS: Record<string, TokenConfig> = {
       burn:     'https://snowtrace.io/token/0x22683BbaDD01473969F23709879187705a253763?a=0x000000000000000000000000000000000000dead',
       lp:       'https://pharaoh.exchange/liquidity/v2/0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
       dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
-      dexChart: 'https://dexscreener.com/avalanche/0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
+      dexChart: 'https://dexscreener.com/avalanche/0x3edd4a031dff9242f9399479428a470542008103',
     },
     hubUrl: 'https://lil-hub.vercel.app',
     theme: {
@@ -99,9 +99,9 @@ export const TOKENS: Record<string, TokenConfig> = {
       ],
     },
     rewards: [
-      { label: 'Epoch 31 Rewards',   amount: '28.10 $AVAX',    period: '5/25 - 6/7' },
-      { label: 'Moat Total Rewards', amount: '176.92 $AVAX',   period: 'Cumulative since 3/16' },
-      { label: 'Lifetime Rewards',   amount: '2,152.13 $AVAX', period: 'Total ecosystem value distributed' },
+      { label: 'Epoch 41 Rewards', amount: '32.49 $AVAX', period: '10/26 - 11/08' },
+      { label: 'Moat Total Rewards', amount: '522.29 $AVAX', period: 'Cumulative since 3/16' },
+      { label: 'Lifetime Rewards', amount: '2,497.50 $AVAX', period: 'Total ecosystem value distributed' },
     ],
   },
   SUPER: {
