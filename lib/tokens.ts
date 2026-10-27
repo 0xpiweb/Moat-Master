@@ -74,14 +74,14 @@ export const TOKENS: Record<string, TokenConfig> = {
     contracts: {
       token:  '0x22683BbaDD01473969F23709879187705a253763',
       moat:   '0x7a4d20261a765bd9ba67d49fbf8189843eec3393',
-      lpPair: '0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
+      lpPair: '0x3edd4a031dff9242f9399479428a470542008103',
     },
     urls: {
       moat:     'https://moats.app/moat/0x7a4d20261a765bd9ba67d49fbf8189843eec3393',
       buy:      'https://pharaoh.exchange/swap?outputCurrency=0x22683BbaDD01473969F23709879187705a253763&to=0x22683BbaDD01473969F23709879187705a253763',
       burn:     'https://snowtrace.io/token/0x22683BbaDD01473969F23709879187705a253763?a=0x000000000000000000000000000000000000dead',
-      lp:       'https://pharaoh.exchange/liquidity/v2/0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
-      dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2',
+      lp:       'https://pharaoh.exchange/liquidity/v2/0x3edd4a031dff9242f9399479428a470542008103',
+      dexApi:   'https://api.dexscreener.com/latest/dex/pairs/avalanche/0x3edd4a031dff9242f9399479428a470542008103',
       dexChart: 'https://dexscreener.com/avalanche/0x3edd4a031dff9242f9399479428a470542008103',
     },
     hubUrl: 'https://lil-hub.vercel.app',
